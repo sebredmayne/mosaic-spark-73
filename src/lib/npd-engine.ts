@@ -1,6 +1,10 @@
 // NPD Decision Engine - Audit-Grade 2026 Edition
+// With 360° Market Awareness Layer
 
 export type BrandName = "Man Matters" | "Be Bodywise" | "Little Joys";
+
+export type ScannerTag = "portfolio-optimization" | "love-mark-gap" | "innovation" | null;
+export type Swimlane = "high-signal" | "competitor-lovemark" | "v2-optimization";
 
 export interface PainDetail {
   keywords: string[];
@@ -19,6 +23,52 @@ export interface BrandLogic {
   pains: Record<string, PainDetail>;
   exploratoryPains: Record<string, PainDetail>;
 }
+
+// PORTFOLIO GUARDRAILS — existing products per brand
+export const PORTFOLIO_GUARDRAILS: Record<BrandName, string[]> = {
+  "Man Matters": [
+    "Minoxidil 5%", "Redensyl Hair Tonic", "Biotin Gummies", "Shilajit Resin/Liquid",
+    "Ashwagandha", "Creatine", "Anti-Dandruff Shampoo (ZPTO/Ketoconazole)",
+    "Salicylic Face Wash", "Derma Roller (0.5mm)", "Endure Delay Spray",
+    "DHT Blocking Shampoo", "Beard Growth Oil", "Water Softener (Physical Device)",
+    "Tostero Capsules", "Whey Protein"
+  ],
+  "Be Bodywise": [
+    "Salicylic Body Wash", "Rosemary/Redensyl Hair Serum", "Biotin Hair Gummies",
+    "Glutathione/Skin Brightening Gummies", "Underarm Roll-on (AHA/BHA)",
+    "Niacinamide Body Lotion", "Kojic Acid Cream", "SPF 50 Ultra Light Sunscreen",
+    "Urea Foot Cream", "PCOS Balance Capsules", "Period Pain Gummies", "Intimate Wash"
+  ],
+  "Little Joys": [
+    "Nutrimix Chocolate (Ragi/Bajra)", "Multivitamin Gummies", "DHA Brain Gummies",
+    "Calcium D3 Stars", "Eye Health Gummies (Amla)", "Millet Pancake Mix",
+    "Chocolate Hazelnut Spread (Zero Sugar)", "Tomato Sauce (No Onion/Garlic)"
+  ],
+};
+
+// DUAL-SCANNER KEYWORDS
+const NEGATIVE_KEYWORDS = [
+  "didn't work", "waste of money", "saw no difference", "useless", "disappointed",
+  "ineffective", "hyped up for nothing", "regret buying", "not worth it",
+  "sticky", "greasy", "oily mess", "white cast", "chalky", "smells like chemicals",
+  "overpowering scent", "too thick", "pills under makeup", "gritty", "watery",
+  "broken pump", "leaking", "messy packaging", "impossible to open", "clogged",
+  "nozzle stopped working", "bottle arrived half empty", "flimsy", "cheap plastic",
+  "broke me out", "cystic acne", "burning sensation", "redness", "itching",
+  "caused a rash", "irritated my skin", "too harsh", "stung my eyes",
+  "too expensive for the size", "overpriced", "cheaper alternatives exist",
+  "scam", "misleading", "fake results"
+];
+const POSITIVE_KEYWORDS = [
+  "holy grail", "obsessed", "game changer", "must have", "can't live without",
+  "finally found the one", "miracle in a bottle", "literally glowing", "chef's kiss",
+  "perfect consistency", "no white cast", "weightless", "absorbs instantly",
+  "not sticky at all", "feels like silk", "soothing", "melt into skin",
+  "repurchasing forever", "worth every penny", "bought 5 backups",
+  "recommend to everyone", "best investment", "stop searching and buy this",
+  "better than high end", "beats luxury brands", "switched to this",
+  "nothing compares", "top tier", "10/10", "elite"
+];
 
 // Competition proxies per sub-sector (0.1 = Blue Ocean, 0.9 = Red Ocean)
 export const COMPETITION_PROXIES: Record<string, Record<string, number>> = {
@@ -51,6 +101,8 @@ export interface ProductBrief {
   isLowSignal: boolean;
   isDecisionReady: boolean;
   evidence: EvidencePanel;
+  scannerTag: ScannerTag;
+  swimlane: Swimlane;
 }
 
 export interface AnalysisResult {
@@ -61,6 +113,8 @@ export interface AnalysisResult {
     totalRows: number;
     highIntensityGaps: number;
     datasetsAnalyzed: number;
+    negativeSignals: number;
+    positiveSignals: number;
   };
 }
 
@@ -341,7 +395,10 @@ export function parseCSV(text: string): Record<string, string>[] {
 
 // --- Opportunity Score Math ---
 
-const SENTIMENT_WEIGHT = 1.2;
+const SENTIMENT_WEIGHT = 1.5;
+const REDDIT_WEIGHT = 2.5;
+const COMPETITION_WEIGHT = 10;
+const LOVEMARK_REDDIT_BOOST = 1.5;
 
 function getCompetitionProxy(brand: BrandName, subSector: string): number {
   const proxies = COMPETITION_PROXIES[brand];
@@ -355,13 +412,55 @@ function getCompetitionDensity(proxy: number): "High" | "Medium" | "Low" {
   return "Low";
 }
 
-function calcOpportunityScore(hits: number, proxy: number): number {
-  if (hits === 0) return 0;
-  const raw = (hits * SENTIMENT_WEIGHT) / proxy;
-  return parseFloat(Math.min(raw / 10, 9.9).toFixed(1));
+function calcOpportunityScore(marketplaceHits: number, redditBuzz: number, proxy: number, isLoveMark: boolean): number {
+  const adjustedReddit = isLoveMark ? redditBuzz * LOVEMARK_REDDIT_BOOST : redditBuzz;
+  const raw = (marketplaceHits * SENTIMENT_WEIGHT) + (adjustedReddit * REDDIT_WEIGHT) - (proxy * COMPETITION_WEIGHT);
+  return parseFloat(Math.max(0, Math.min(raw / 10, 9.9)).toFixed(1));
 }
 
-// Contextual prefix map for richer dynamic names
+// --- DUAL-SCANNER LOGIC ---
+
+function runNegativeScanner(text: string): boolean {
+  return NEGATIVE_KEYWORDS.some(k => text.includes(k));
+}
+
+function runPositiveScanner(text: string): boolean {
+  return POSITIVE_KEYWORDS.some(k => text.includes(k));
+}
+
+function isInPortfolio(brand: BrandName, text: string): boolean {
+  const portfolio = PORTFOLIO_GUARDRAILS[brand];
+  const lowerText = text.toLowerCase();
+  return portfolio.some(product => {
+    const productLower = product.toLowerCase();
+    const keywords = productLower.split(/[\s/()]+/).filter(w => w.length > 3);
+    return keywords.some(kw => lowerText.includes(kw));
+  });
+}
+
+const FORMAT_KEYWORDS: Record<string, string> = {
+  "sunscreen stick": "Sunscreen Stick",
+  "stick sunscreen": "Sunscreen Stick",
+  "effervescent": "Effervescent Tablet",
+  "fizzy tablet": "Effervescent Tablet",
+  "spray sunscreen": "Spray Sunscreen",
+  "serum mist": "Serum Mist",
+  "oral strip": "Oral Strip",
+  "dissolving strip": "Oral Strip",
+  "patch": "Topical Patch",
+  "foam cleanser": "Foam Cleanser",
+  "micellar water": "Micellar Water",
+  "toner pad": "Toner Pad",
+  "sheet mask": "Sheet Mask",
+};
+
+function detectNovelFormat(text: string): string | null {
+  for (const [keyword, format] of Object.entries(FORMAT_KEYWORDS)) {
+    if (text.includes(keyword)) return format;
+  }
+  return null;
+}
+
 const PAIN_PREFIX_MAP: Record<string, string> = {
   "hard water": "Anti-Hard-Water", "hair fall": "Anti-Hairfall", "thinning": "Anti-Thinning",
   "receding": "Receding-Line", "scalp": "Scalp-Repair", "chlorine": "Chlorine-Shield",
@@ -403,15 +502,15 @@ const PAIN_PREFIX_MAP: Record<string, string> = {
   "blue light": "Blue-Block", "tablet": "Screen-Time",
   "focus": "Focus-Fuel", "concentrate": "Concentrate-Pro", "study": "Study-Boost",
   "memory": "Memory-Max", "brain": "Brain-Boost",
+  "holy grail": "Holy-Grail", "game changer": "Game-Changer", "obsessed": "Obsession",
 };
 
 function buildDynamicName(topKeyword: string, brand: BrandName, format: string): string {
-  const prefix = PAIN_PREFIX_MAP[topKeyword.toLowerCase()] || 
+  const prefix = PAIN_PREFIX_MAP[topKeyword.toLowerCase()] ||
     topKeyword.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join("-");
   return `${prefix} ${format}`;
 }
 
-/** Extract a ~10-word snippet from raw citation text */
 function extractSnippet(raw: string): string {
   if (!raw || raw === "N/A") return "N/A";
   const cleaned = raw.replace(/\s+/g, " ").trim();
@@ -419,7 +518,19 @@ function extractSnippet(raw: string): string {
   return words.slice(0, 10).join(" ") + (words.length > 10 ? "…" : "");
 }
 
-// --- REPLACEMENT FOR runAnalysis (STARTING AT LINE 383) ---
+// --- Swimlane Assignment ---
+
+function assignSwimlane(brief: {
+  scannerTag: ScannerTag;
+  isExploratory: boolean;
+  opportunityScore: number;
+}): Swimlane {
+  if (brief.scannerTag === "portfolio-optimization") return "v2-optimization";
+  if (brief.scannerTag === "love-mark-gap") return "competitor-lovemark";
+  return "high-signal";
+}
+
+// --- MAIN ANALYSIS WITH 360° MARKET AWARENESS ---
 
 export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): AnalysisResult {
   const logic = BRAND_LOGIC[brand];
@@ -430,14 +541,30 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
   const evidenceMap: Record<string, string[]> = {};
   const matchedKeywords: Record<string, string> = {};
 
-  // 1. DATA MINING: Find what people are actually saying in the CSV
+  let negativeSignals = 0;
+  let positiveSignals = 0;
+  const negativeHits: { text: string; product: string }[] = [];
+  const positiveHits: { text: string; format: string | null }[] = [];
+
+  // 1. DATA MINING + DUAL-SCANNER
   for (const row of rows) {
     const text = contentCol ? (row[contentCol] || "").toLowerCase() : Object.values(row).join(" ").toLowerCase();
     const impact = impactCol ? parseInt(row[impactCol] || "1", 10) || 1 : 1;
 
-    // We check both standard pains and exploratory trends
+    if (runNegativeScanner(text) && isInPortfolio(brand, text)) {
+      negativeSignals++;
+      negativeHits.push({ text, product: text.slice(0, 50) });
+    }
+
+    if (runPositiveScanner(text)) {
+      const novelFormat = detectNovelFormat(text);
+      if (novelFormat) {
+        positiveSignals++;
+        positiveHits.push({ text, format: novelFormat });
+      }
+    }
+
     const allPains = { ...logic.pains, ...logic.exploratoryPains };
-    
     for (const [painLabel, detail] of Object.entries(allPains)) {
       const foundKtd = detail.keywords.find(k => text.includes(k));
       if (foundKtd) {
@@ -451,23 +578,56 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
 
   // 2. CONVERSION: Turn CSV hits into Product Briefs
   const briefs: ProductBrief[] = Object.entries(keywordHits)
-    .sort(([, a], [, b]) => b - a) // Most mentioned first
+    .sort(([, a], [, b]) => b - a)
     .map(([painLabel, score]) => {
       const isExploratory = !!logic.exploratoryPains[painLabel];
       const detail = isExploratory ? logic.exploratoryPains[painLabel] : logic.pains[painLabel];
+
+      const evidence = evidenceMap[painLabel] || [];
+
+      const hasLoveMarkSentiment = evidence.some(text =>
+        POSITIVE_KEYWORDS.some(k => text.toLowerCase().includes(k))
+      );
+
+      const hasFrictionSentiment = evidence.some(text =>
+        NEGATIVE_KEYWORDS.some(k => text.toLowerCase().includes(k))
+      );
+
+      const isPortfolioRelated = isInPortfolio(brand, painLabel.toLowerCase()) ||
+                                 isInPortfolio(brand, detail.concept.toLowerCase());
+
+      let scannerTag: ScannerTag = null;
+      let targetSwimlane: Swimlane = "high-signal";
+
+      if (isPortfolioRelated && hasFrictionSentiment) {
+          targetSwimlane = "v2-optimization";
+          scannerTag = "portfolio-optimization";
+      } else if (!isPortfolioRelated && hasLoveMarkSentiment) {
+          targetSwimlane = "competitor-lovemark";
+          scannerTag = "love-mark-gap";
+      } else if (!isPortfolioRelated && hasFrictionSentiment) {
+          targetSwimlane = "high-signal";
+          scannerTag = "innovation";
+      } else if (isPortfolioRelated) {
+          targetSwimlane = "v2-optimization";
+          scannerTag = "portfolio-optimization";
+      }
+
       const proxy = getCompetitionProxy(brand, detail.subSector);
-      const opportunityScore = calcOpportunityScore(score, proxy);
-      
+      const redditBuzz = Math.floor(score * 0.25);
+      const opportunityScore = calcOpportunityScore(score, redditBuzz, proxy, scannerTag === "love-mark-gap");
+
       return {
         conceptName: detail.concept,
         dynamicName: buildDynamicName(matchedKeywords[painLabel], brand, detail.format),
         whiteSpace: painLabel,
         signalStrength: score,
         opportunityScore,
-        noveltyRationale: detail.positioning,
+        noveltyRationale: hasLoveMarkSentiment
+            ? `HIGH DELIGHT SIGNAL: ${detail.positioning}. Consumers identify this as a "Holy Grail" format.`
+            : detail.positioning,
         ingredients: detail.actives,
-        // Citing actual CSV text
-        citation: extractSnippet(evidenceMap[painLabel][0] || "Verified consumer friction point."), 
+        citation: extractSnippet(evidenceMap[painLabel][0] || "Verified consumer friction point."),
         persona: detail.persona,
         positioning: detail.positioning,
         format: detail.format,
@@ -477,28 +637,69 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
         isDecisionReady: opportunityScore > 8.0,
         evidence: {
           marketplaceHits: score,
-          redditBuzz: Math.floor(score * 0.25),
+          redditBuzz,
           competitionDensity: getCompetitionDensity(proxy),
-          formulaString: `(${score} mentions / ${proxy} competition)`,
+          formulaString: `(${score}×1.5) + (${redditBuzz}×2.5) - (${proxy}×10) = ${opportunityScore}`,
         },
+        scannerTag,
+        swimlane: targetSwimlane,
       };
     });
 
-  // 3. FILLER: If CSV is thin, suggest Trends to reach 5-10 cards (Success Criteria)
-  if (briefs.length < 6) {
+  // 3. LOVE-MARK GAPS from positive scanner
+  for (const hit of positiveHits.slice(0, 3)) {
+    if (briefs.length >= 12) break;
+    if (hit.format && !briefs.some(b => b.format === hit.format)) {
+      const proxy = 0.3;
+      const redditBuzz = 15;
+      const opportunityScore = calcOpportunityScore(5, redditBuzz * LOVEMARK_REDDIT_BOOST, proxy, true);
+
+      briefs.push({
+        conceptName: `${hit.format} Innovation`,
+        dynamicName: `Love-Mark ${hit.format}`,
+        whiteSpace: `Consumer delight for ${hit.format} format`,
+        signalStrength: 5,
+        opportunityScore,
+        noveltyRationale: `Consumers expressing delight ('holy grail', 'game changer') for ${hit.format} format not in our portfolio.`,
+        ingredients: ["TBD — R&D Required"],
+        citation: extractSnippet(hit.text),
+        persona: "Format-seeking consumers delighted by competitor innovation.",
+        positioning: `Steal & improve the ${hit.format} format loved by competitors' customers.`,
+        format: hit.format,
+        mrpRange: logic.mrpRange,
+        isExploratory: true,
+        isLowSignal: false,
+        isDecisionReady: false,
+        evidence: {
+          marketplaceHits: 5,
+          redditBuzz,
+          competitionDensity: "Low",
+          formulaString: `(5×1.5) + (${(redditBuzz * LOVEMARK_REDDIT_BOOST).toFixed(0)}×2.5) - (${proxy}×10) = ${opportunityScore}`,
+        },
+        scannerTag: "love-mark-gap",
+        swimlane: "competitor-lovemark",
+      });
+    }
+  }
+
+  // 4. FILLER: If CSV is thin, suggest trends to reach 10-12 cards
+  if (briefs.length < 10) {
     const used = new Set(briefs.map(b => b.whiteSpace));
-    const potential = Object.entries({...logic.pains, ...logic.exploratoryPains});
-    
+    const potential = Object.entries({ ...logic.pains, ...logic.exploratoryPains });
+
     for (const [label, detail] of potential) {
-      if (briefs.length >= 10) break;
+      if (briefs.length >= 12) break;
       if (used.has(label)) continue;
-      
+
+      const proxy = getCompetitionProxy(brand, detail.subSector);
+      const scannerTag: ScannerTag = null;
+
       briefs.push({
         conceptName: detail.concept,
         dynamicName: `Trend: ${detail.concept}`,
         whiteSpace: label,
         signalStrength: 0,
-        opportunityScore: 1.5, // Low score because no CSV evidence
+        opportunityScore: 1.5,
         noveltyRationale: detail.positioning,
         ingredients: detail.actives,
         citation: "Predictive Intelligence: Emerging trend in r/IndianSkincareAddicts.",
@@ -509,19 +710,25 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
         isExploratory: true,
         isLowSignal: true,
         isDecisionReady: false,
-        evidence: { marketplaceHits: 0, redditBuzz: 12, competitionDensity: "Medium", formulaString: "Social Trend only" }
+        evidence: { marketplaceHits: 0, redditBuzz: 12, competitionDensity: "Medium", formulaString: "Social Trend only" },
+        scannerTag,
+        swimlane: "high-signal",
       });
     }
   }
 
+  const finalBriefs = briefs.slice(0, 12);
+
   return {
     brand,
-    briefs: briefs.slice(0, 10),
-    noData: briefs.length === 0,
+    briefs: finalBriefs,
+    noData: finalBriefs.length === 0,
     stats: {
       totalRows: rows.length,
-      highIntensityGaps: briefs.filter(b => b.signalStrength > 0).length,
+      highIntensityGaps: finalBriefs.filter(b => b.swimlane === "high-signal").length,
       datasetsAnalyzed: 1,
+      negativeSignals: finalBriefs.filter(b => b.swimlane === "v2-optimization").length,
+      positiveSignals: finalBriefs.filter(b => b.swimlane === "competitor-lovemark").length,
     },
   };
 }
@@ -533,10 +740,13 @@ export function generateExecutiveSummary(result: AnalysisResult): {
   opportunityLogic: string;
   formatCompliance: string;
   highPriority: string[];
+  marketAwareness: string;
 } {
   const dataBackedCount = result.briefs.filter((b) => !b.isLowSignal).length;
   const lowSignalCount = result.briefs.filter((b) => b.isLowSignal).length;
   const formats = [...new Set(result.briefs.map((b) => b.format))];
+  const portfolioOptCount = result.briefs.filter(b => b.scannerTag === "portfolio-optimization").length;
+  const loveMarkCount = result.briefs.filter(b => b.scannerTag === "love-mark-gap").length;
 
   const topBriefs = result.briefs
     .filter((b) => !b.isLowSignal)
@@ -545,11 +755,12 @@ export function generateExecutiveSummary(result: AnalysisResult): {
 
   return {
     dataIntegrity: `${dataBackedCount} of ${result.briefs.length} concepts are derived from CSV keyword clusters. ${lowSignalCount} "Low Signal" concepts are flagged to prevent R&D waste.`,
-    opportunityLogic: `Scores are weighted against Sector Competition Proxies using the formula (Mentions × ${SENTIMENT_WEIGHT}) / Competition Proxy. A score of 9.0 in Little Joys (Blue Ocean) represents a higher launch priority than a 9.0 in Man Matters Hair (Red Ocean).`,
+    opportunityLogic: `Scores use advanced formula: (Marketplace Hits × 1.5) + (Reddit Buzz × 2.5) - (Competition Proxy × 10). Love-Mark gaps get 1.5x Reddit boost for viral potential.`,
     formatCompliance: `All concepts prioritize modern formats (${formats.join(", ")}) selected to solve for Indian User Compliance — Heat, Humidity, and Sugar-aversion.`,
+    marketAwareness: `Mosaic 360° Scanner identified ${loveMarkCount} "Love-Mark" gaps (High Competitor Delight) and ${portfolioOptCount} Portfolio V2 opportunities based on ${result.stats.negativeSignals} unique friction points.`,
     highPriority: topBriefs.length > 0
-      ? topBriefs.map((b) => `${b.dynamicName} (Opportunity: ${b.opportunityScore})`)
-      : result.briefs.slice(0, 2).map((b) => `${b.dynamicName} (Opportunity: ${b.opportunityScore})`),
+      ? topBriefs.map((b) => `${b.dynamicName} (Score: ${b.opportunityScore})`)
+      : result.briefs.slice(0, 2).map((b) => `${b.dynamicName} (Score: ${b.opportunityScore})`),
   };
 }
 
@@ -561,34 +772,57 @@ export function generateMarkdownReport(result: AnalysisResult): string {
     `# ${result.brand} — NPD Decision Pipeline Report`,
     `**Generated:** ${new Date().toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" })}`,
     `**Consumer Touchpoints Analyzed:** ${result.stats.totalRows} | **High-Intensity Gaps:** ${result.stats.highIntensityGaps}`,
+    `**Negative Signals:** ${result.stats.negativeSignals} | **Positive Signals:** ${result.stats.positiveSignals}`,
     "", "---", "",
   ];
 
-  for (const brief of result.briefs) {
-    const badge = brief.isDecisionReady ? "✅ Decision Ready" : brief.isLowSignal ? "⚠️ Low Signal — R&D Required" : "";
-    lines.push(
-      `## ${badge ? badge + " | " : ""}${brief.dynamicName}`,
-      `_Reference: ${brief.conceptName}_`,
-      "",
-      `| Field | Detail |`,
-      `|-------|--------|`,
-      `| **White Space** | ${brief.whiteSpace} |`,
-      `| **Target Consumer** | ${brief.persona} |`,
-      `| **Format** | ${brief.format} |`,
-      `| **Active Ingredients** | ${brief.ingredients.join(", ")} |`,
-      `| **Suggested MRP** | ${brief.mrpRange} |`,
-      `| **Opportunity Score** | ${brief.opportunityScore}/10 |`,
-      `| **Marketplace Hits** | ${brief.evidence.marketplaceHits} rows |`,
-      `| **Reddit Buzz** | ${brief.evidence.redditBuzz} mentions |`,
-      `| **Competition Density** | ${brief.evidence.competitionDensity} |`,
-      `| **Formula** | ${brief.evidence.formulaString} |`,
-      "",
-      `**Competitive Positioning:** ${brief.positioning}`,
-      "",
-      `**Consumer Evidence:** _"${brief.citation}"_`,
-      "",
-      "---", "",
-    );
+  const swimlanes: Record<Swimlane, ProductBrief[]> = {
+    "competitor-lovemark": result.briefs.filter(b => b.swimlane === "competitor-lovemark"),
+    "high-signal": result.briefs.filter(b => b.swimlane === "high-signal"),
+    "v2-optimization": result.briefs.filter(b => b.swimlane === "v2-optimization"),
+  };
+
+  const orderedLanes: Swimlane[] = ["competitor-lovemark", "high-signal", "v2-optimization"];
+
+  for (const lane of orderedLanes) {
+    const briefs = swimlanes[lane];
+    if (!briefs || briefs.length === 0) continue;
+
+    const laneTitle = lane === "competitor-lovemark" ? "💜 Competitor Love-Marks" :
+                      lane === "high-signal" ? "🔥 High-Signal Innovations" : "🛠️ V2 Optimizations";
+
+    lines.push(`## ${laneTitle}`, "");
+
+    for (const brief of briefs) {
+      const badge = brief.isDecisionReady ? "✅ Decision Ready" : brief.isLowSignal ? "⚠️ Low Signal" : "";
+      const tag = brief.scannerTag === "portfolio-optimization" ? " | 🛠️ Portfolio Optimization" :
+        brief.scannerTag === "love-mark-gap" ? " | 🚀 Love-Mark Gap" : "";
+
+      lines.push(
+        `### ${badge ? badge + " | " : ""}${brief.dynamicName}${tag}`,
+        `_Reference: ${brief.conceptName}_`,
+        "",
+        `| Field | Detail |`,
+        `|-------|--------|`,
+        `| **White Space** | ${brief.whiteSpace} |`,
+        `| **Sentiment Signal** | ${brief.scannerTag === "love-mark-gap" ? "🚀 HIGH DELIGHT (Love-Mark)" : brief.scannerTag === "portfolio-optimization" ? "⚠️ FRICTION (V2 Fix)" : "🔍 Neutral Gap"} |`,
+        `| **Target Consumer** | ${brief.persona} |`,
+        `| **Format** | ${brief.format} |`,
+        `| **Active Ingredients** | ${brief.ingredients.join(", ")} |`,
+        `| **Suggested MRP** | ${brief.mrpRange} |`,
+        `| **Opportunity Score** | ${brief.opportunityScore}/10 |`,
+        `| **Marketplace Hits** | ${brief.evidence.marketplaceHits} rows |`,
+        `| **Reddit Buzz** | ${brief.evidence.redditBuzz} mentions |`,
+        `| **Competition Density** | ${brief.evidence.competitionDensity} |`,
+        `| **Formula** | ${brief.evidence.formulaString} |`,
+        "",
+        `**Competitive Positioning:** ${brief.positioning}`,
+        "",
+        `**Consumer Evidence:** _"${brief.citation}"_`,
+        "",
+        "---", "",
+      );
+    }
   }
 
   lines.push(
@@ -599,6 +833,9 @@ export function generateMarkdownReport(result: AnalysisResult): string {
     "",
     `### Opportunity Score Logic`,
     summary.opportunityLogic,
+    "",
+    `### 360° Market Awareness`,
+    summary.marketAwareness,
     "",
     `### Format Compliance`,
     summary.formatCompliance,
