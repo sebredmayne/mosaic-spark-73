@@ -361,14 +361,62 @@ function calcOpportunityScore(hits: number, proxy: number): number {
   return parseFloat(Math.min(raw / 10, 9.9).toFixed(1));
 }
 
-function buildDynamicName(topKeyword: string, brand: BrandName): string {
-  const format = BRAND_FORMATS[brand];
-  // Capitalize each word
-  const name = topKeyword
-    .split(/\s+/)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-  return `${name} ${format}`;
+// Contextual prefix map for richer dynamic names
+const PAIN_PREFIX_MAP: Record<string, string> = {
+  "hard water": "Anti-Hard-Water", "hair fall": "Anti-Hairfall", "thinning": "Anti-Thinning",
+  "receding": "Receding-Line", "scalp": "Scalp-Repair", "chlorine": "Chlorine-Shield",
+  "stamina": "Stamina-Boost", "energy": "Energy-Surge", "workout": "Post-Workout",
+  "fatigue": "Anti-Fatigue", "gym": "Gym-Recovery", "tired": "Anti-Fatigue",
+  "patchy": "Anti-Patch", "beard growth": "Beard-Growth", "stubble": "Stubble-Fill",
+  "itchy": "Anti-Itch", "beard": "Beard-Dense", "stress": "Stress-Relief",
+  "anxiety": "Calm-Mind", "cortisol": "Cortisol-Block", "sleep": "Sleep-Restore",
+  "dandruff": "Anti-Dandruff", "flaky": "Anti-Flake", "fungal": "Anti-Fungal",
+  "acne": "Acne-Clear", "pcos": "PCOS-Balance", "pimple": "Anti-Pimple",
+  "hormonal": "Hormonal-Balance", "breakout": "Anti-Breakout", "cystic": "Cystic-Clear",
+  "oily": "Oil-Control", "greasy": "Anti-Grease", "sweat": "Sweat-Proof",
+  "sticky": "Anti-Stick", "humidity": "Humidity-Shield", "shine": "Shine-Control",
+  "bumpy": "Bump-Smooth", "ingrown": "Ingrown-Clear", "strawberry skin": "Skin-Smoothing",
+  "rough": "Rough-Skin-Smoothing", "keratosis": "KP-Clear",
+  "cramp": "Cramp-Relief", "period pain": "Period-Ease", "menstrual": "Menstrual-Calm",
+  "pms": "PMS-Shield", "bloating": "Anti-Bloat",
+  "hair thin": "Hair-Density", "hair loss": "Anti-Hairloss", "shedding": "Anti-Shed",
+  "bald spot": "Spot-Regrowth", "volume": "Volume-Boost",
+  "picky": "Appetite-Boost", "growth": "Growth-Fuel", "height": "Height-Boost",
+  "appetite": "Appetite-Spark", "weight gain": "Healthy-Gain", "fussy": "Fussy-Fix",
+  "mom": "Mom-Recovery", "lactation": "Lacto-Boost", "post-partum": "Post-Partum",
+  "delivery": "Post-Delivery", "breastfeeding": "Nursing-Support",
+  "sugar": "Zero-Sugar", "sweet": "Sugar-Free", "unhealthy": "Clean-Label",
+  "cavity": "Cavity-Guard", "chocolate": "Choco-Free", "junk": "Anti-Junk",
+  "sick": "Immunity-Shield", "cold": "Cold-Guard", "cough": "Cough-Calm",
+  "immunity": "Immunity-Boost", "fever": "Fever-Guard", "infection": "Infection-Shield",
+  "calcium": "Calcium-Boost", "bone": "Bone-Strong", "tall": "Height-Max",
+  "growth spurt": "Growth-Spurt", "vitamin d": "VitD-Fortified",
+  "wrinkle": "Anti-Wrinkle", "aging": "Anti-Aging", "dark circles": "Dark-Circle-Erase",
+  "eye bags": "Eye-Depuff", "fine lines": "Fine-Line-Fade",
+  "weight": "Weight-Control", "belly fat": "Belly-Burn", "metabolism": "Metabo-Boost",
+  "diet": "Diet-Support", "obesity": "Fat-Trim",
+  "intimate": "Intimate-Care", "vaginal": "V-Balance", "odor": "Odor-Shield",
+  "itch": "Anti-Itch", "discharge": "Flora-Balance",
+  "bloat": "Anti-Bloat", "constipation": "Gut-Ease", "gut": "Gut-Reset",
+  "digest": "Digest-Pro", "ibs": "IBS-Calm",
+  "screen": "Screen-Shield", "eye": "Eye-Guard", "vision": "Vision-Boost",
+  "blue light": "Blue-Block", "tablet": "Screen-Time",
+  "focus": "Focus-Fuel", "concentrate": "Concentrate-Pro", "study": "Study-Boost",
+  "memory": "Memory-Max", "brain": "Brain-Boost",
+};
+
+function buildDynamicName(topKeyword: string, brand: BrandName, format: string): string {
+  const prefix = PAIN_PREFIX_MAP[topKeyword.toLowerCase()] || 
+    topKeyword.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join("-");
+  return `${prefix} ${format}`;
+}
+
+/** Extract a ~10-word snippet from raw citation text */
+function extractSnippet(raw: string): string {
+  if (!raw || raw === "N/A") return "N/A";
+  const cleaned = raw.replace(/\s+/g, " ").trim();
+  const words = cleaned.split(" ");
+  return words.slice(0, 10).join(" ") + (words.length > 10 ? "…" : "");
 }
 
 // --- Main Analysis ---
@@ -410,12 +458,13 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
 
   const briefs: ProductBrief[] = sortedPains.map(([painLabel, score]) => {
     const detail = logic.pains[painLabel];
-    const topCitation = citations[painLabel]?.[0]?.text || "N/A";
+    const rawCitation = citations[painLabel]?.[0]?.text || "N/A";
+    const topCitation = extractSnippet(rawCitation);
     const proxy = getCompetitionProxy(brand, detail.subSector);
     const opportunityScore = calcOpportunityScore(score, proxy);
     const density = getCompetitionDensity(proxy);
     const keyword = topKeywords[painLabel] || painLabel.toLowerCase();
-    const dynamicName = buildDynamicName(keyword, brand);
+    const dynamicName = buildDynamicName(keyword, brand, detail.format);
     const formulaString = `(${score} hits × ${SENTIMENT_WEIGHT}) / ${proxy} proxy`;
 
     return {
@@ -453,7 +502,7 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
       const proxy = getCompetitionProxy(brand, detail.subSector);
       briefs.push({
         conceptName: detail.concept,
-        dynamicName: `${painLabel} ${BRAND_FORMATS[brand]}`,
+        dynamicName: buildDynamicName(detail.keywords[0], brand, detail.format),
         whiteSpace: painLabel,
         signalStrength: 0,
         opportunityScore: 0,
@@ -482,7 +531,7 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
         const proxy = getCompetitionProxy(brand, detail.subSector);
         briefs.push({
           conceptName: detail.concept,
-          dynamicName: `${painLabel} ${BRAND_FORMATS[brand]}`,
+          dynamicName: buildDynamicName(detail.keywords[0], brand, detail.format),
           whiteSpace: painLabel,
           signalStrength: 0,
           opportunityScore: 0,
@@ -547,8 +596,8 @@ export function generateExecutiveSummary(result: AnalysisResult): {
     opportunityLogic: `Scores are weighted against Sector Competition Proxies using the formula (Mentions × ${SENTIMENT_WEIGHT}) / Competition Proxy. A score of 9.0 in Little Joys (Blue Ocean) represents a higher launch priority than a 9.0 in Man Matters Hair (Red Ocean).`,
     formatCompliance: `All concepts prioritize modern formats (${formats.join(", ")}) selected to solve for Indian User Compliance — Heat, Humidity, and Sugar-aversion.`,
     highPriority: topBriefs.length > 0
-      ? topBriefs.map((b) => `${b.conceptName} (Opportunity: ${b.opportunityScore})`)
-      : result.briefs.slice(0, 2).map((b) => `${b.conceptName} (Opportunity: ${b.opportunityScore})`),
+      ? topBriefs.map((b) => `${b.dynamicName} (Opportunity: ${b.opportunityScore})`)
+      : result.briefs.slice(0, 2).map((b) => `${b.dynamicName} (Opportunity: ${b.opportunityScore})`),
   };
 }
 
@@ -566,8 +615,8 @@ export function generateMarkdownReport(result: AnalysisResult): string {
   for (const brief of result.briefs) {
     const badge = brief.isDecisionReady ? "✅ Decision Ready" : brief.isLowSignal ? "⚠️ Low Signal — R&D Required" : "";
     lines.push(
-      `## ${badge ? badge + " | " : ""}${brief.conceptName}`,
-      `_Dynamic Name: ${brief.dynamicName}_`,
+      `## ${badge ? badge + " | " : ""}${brief.dynamicName}`,
+      `_Reference: ${brief.conceptName}_`,
       "",
       `| Field | Detail |`,
       `|-------|--------|`,

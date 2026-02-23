@@ -49,9 +49,9 @@ export default function BriefCard({ brief, brand, index }: BriefCardProps) {
             )}
           </div>
           <h3 className="font-display text-lg font-bold text-foreground leading-tight">
-            {brief.conceptName}
+            {brief.dynamicName}
           </h3>
-          <p className="text-xs text-muted-foreground font-mono mt-0.5">{brief.dynamicName}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">ref: {brief.conceptName}</p>
         </div>
         <div className="flex flex-col items-end gap-1.5 shrink-0">
           <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${brief.isDecisionReady ? "bg-emerald-500 text-white" : brandBadgeMap[brand]}`}>
