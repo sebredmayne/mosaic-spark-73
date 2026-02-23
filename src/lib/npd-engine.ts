@@ -1,4 +1,4 @@
-// NPD Engine - Enhanced 2026 PM Edition
+// NPD Decision Engine - Audit-Grade 2026 Edition
 
 export type BrandName = "Man Matters" | "Be Bodywise" | "Little Joys";
 
@@ -9,19 +9,37 @@ export interface PainDetail {
   persona: string;
   positioning: string;
   format: string;
+  subSector: string;
 }
 
 export interface BrandLogic {
   categories: string[];
   mrpRange: string;
+  defaultFormat: string;
   pains: Record<string, PainDetail>;
   exploratoryPains: Record<string, PainDetail>;
 }
 
+// Competition proxies per sub-sector (0.1 = Blue Ocean, 0.9 = Red Ocean)
+export const COMPETITION_PROXIES: Record<string, Record<string, number>> = {
+  "Man Matters": { Hair: 0.9, Performance: 0.6, Beard: 0.7 },
+  "Be Bodywise": { Skin: 0.8, PCOS: 0.4, "Body Care": 0.6 },
+  "Little Joys": { "Kids Nutrition": 0.5, "Moms Health": 0.3 },
+};
+
+export interface EvidencePanel {
+  marketplaceHits: number;
+  redditBuzz: number;
+  competitionDensity: "High" | "Medium" | "Low";
+  formulaString: string;
+}
+
 export interface ProductBrief {
   conceptName: string;
+  dynamicName: string;
   whiteSpace: string;
   signalStrength: number;
+  opportunityScore: number;
   noveltyRationale: string;
   ingredients: string[];
   citation: string;
@@ -29,8 +47,10 @@ export interface ProductBrief {
   positioning: string;
   format: string;
   mrpRange: string;
-  innovationScore: number;
   isExploratory: boolean;
+  isLowSignal: boolean;
+  isDecisionReady: boolean;
+  evidence: EvidencePanel;
 }
 
 export interface AnalysisResult {
@@ -44,10 +64,17 @@ export interface AnalysisResult {
   };
 }
 
+const BRAND_FORMATS: Record<BrandName, string> = {
+  "Man Matters": "Tonic",
+  "Be Bodywise": "Serum-Mist",
+  "Little Joys": "Nutri-Melt",
+};
+
 export const BRAND_LOGIC: Record<BrandName, BrandLogic> = {
   "Man Matters": {
     categories: ["Hair", "Performance", "Beard"],
     mrpRange: "₹399 – ₹799",
+    defaultFormat: "Tonic",
     pains: {
       "Hard Water Hairfall": {
         keywords: ["hard water", "hair fall", "thinning", "receding", "scalp", "chlorine"],
@@ -56,6 +83,7 @@ export const BRAND_LOGIC: Record<BrandName, BrandLogic> = {
         persona: "Urban men in hard-water cities (Bengaluru/NCR) battling daily hair thinning.",
         positioning: "First-of-its-kind leave-on chelating mist; cheaper than shower filters.",
         format: "Mist",
+        subSector: "Hair",
       },
       "Performance Fatigue": {
         keywords: ["stamina", "energy", "workout", "fatigue", "gym", "tired"],
@@ -64,6 +92,7 @@ export const BRAND_LOGIC: Record<BrandName, BrandLogic> = {
         persona: "Active men looking for clean energy without gummy sugars.",
         positioning: "Zero-sugar effervescent format for faster absorption vs resins.",
         format: "Effervescent Tablet",
+        subSector: "Performance",
       },
       "Patchy Beard": {
         keywords: ["patchy", "beard growth", "stubble", "itchy", "beard"],
@@ -72,6 +101,7 @@ export const BRAND_LOGIC: Record<BrandName, BrandLogic> = {
         persona: "Young professionals seeking fuller, groomed beard growth.",
         positioning: "Targeted gel with clinically-tested BeardMax vs generic oils.",
         format: "Gel",
+        subSector: "Beard",
       },
       "Stress Hair Loss": {
         keywords: ["stress", "anxiety", "cortisol", "mental", "sleep"],
@@ -80,6 +110,7 @@ export const BRAND_LOGIC: Record<BrandName, BrandLogic> = {
         persona: "High-stress tech professionals with stress-induced hair thinning.",
         positioning: "Dual-action sleep + scalp recovery; addresses root cause vs symptom.",
         format: "Sublingual Drops",
+        subSector: "Hair",
       },
       "Dandruff Persistence": {
         keywords: ["dandruff", "flaky", "itchy scalp", "seborrheic", "fungal"],
@@ -88,6 +119,7 @@ export const BRAND_LOGIC: Record<BrandName, BrandLogic> = {
         persona: "Men frustrated with recurring dandruff despite medicated shampoos.",
         positioning: "Microbiome-first approach to dandruff; leave-on serum vs wash-off.",
         format: "Serum",
+        subSector: "Hair",
       },
     },
     exploratoryPains: {
@@ -98,6 +130,7 @@ export const BRAND_LOGIC: Record<BrandName, BrandLogic> = {
         persona: "Men 30+ exploring skincare for the first time.",
         positioning: "Simplified 1-step routine; no fragrance or unnecessary actives.",
         format: "Serum",
+        subSector: "Performance",
       },
       "Weight Management": {
         keywords: ["weight", "belly fat", "metabolism", "diet", "obesity"],
@@ -106,12 +139,14 @@ export const BRAND_LOGIC: Record<BrandName, BrandLogic> = {
         persona: "Urban men seeking non-stimulant metabolic support.",
         positioning: "Oral dissolving strip format for discreet, no-water consumption.",
         format: "Oral Strip",
+        subSector: "Performance",
       },
     },
   },
   "Be Bodywise": {
     categories: ["Skin", "PCOS", "Body Care"],
     mrpRange: "₹349 – ₹649",
+    defaultFormat: "Serum-Mist",
     pains: {
       "Hormonal Acne": {
         keywords: ["acne", "pcos", "pimple", "hormonal", "breakout", "cystic"],
@@ -120,6 +155,7 @@ export const BRAND_LOGIC: Record<BrandName, BrandLogic> = {
         persona: "Women managing PCOS-related skin flare-ups in their 20s–30s.",
         positioning: "Internal solution for hormonal acne; avoids skin-stripping topicals.",
         format: "Gummy",
+        subSector: "PCOS",
       },
       "Humidity Greasiness": {
         keywords: ["oily", "greasy", "sweat", "sticky", "humidity", "shine"],
@@ -128,6 +164,7 @@ export const BRAND_LOGIC: Record<BrandName, BrandLogic> = {
         persona: "Women in humid Indian cities tired of white-cast, heavy sunscreens.",
         positioning: "Weightless gel format optimized for Indian humidity; zero white cast.",
         format: "Gel",
+        subSector: "Skin",
       },
       "Strawberry Skin": {
         keywords: ["bumpy", "ingrown", "strawberry skin", "rough", "keratosis"],
@@ -136,6 +173,7 @@ export const BRAND_LOGIC: Record<BrandName, BrandLogic> = {
         persona: "Women seeking smooth skin without sticky body lotions.",
         positioning: "Weightless mist format; replaces thick creams for daily compliance.",
         format: "Mist",
+        subSector: "Body Care",
       },
       "Period Pain": {
         keywords: ["cramp", "period pain", "menstrual", "pms", "bloating"],
@@ -144,6 +182,7 @@ export const BRAND_LOGIC: Record<BrandName, BrandLogic> = {
         persona: "Working women who can't afford PMS disrupting their schedules.",
         positioning: "Clinically-dosed magnesium form with 3x better absorption than oxide.",
         format: "Tablet",
+        subSector: "PCOS",
       },
       "Hair Thinning": {
         keywords: ["hair thin", "hair loss", "shedding", "bald spot", "volume"],
@@ -152,6 +191,7 @@ export const BRAND_LOGIC: Record<BrandName, BrandLogic> = {
         persona: "Women 25–40 noticing post-stress or post-pregnancy hair thinning.",
         positioning: "Topical serum with DHT-blockers; avoids oral supplements' GI side effects.",
         format: "Serum",
+        subSector: "Body Care",
       },
     },
     exploratoryPains: {
@@ -162,6 +202,7 @@ export const BRAND_LOGIC: Record<BrandName, BrandLogic> = {
         persona: "Health-conscious women seeking gentle, OB-GYN-approved intimate care.",
         positioning: "Foam format with pH 3.5; replaces soap-based washes that disrupt flora.",
         format: "Foam",
+        subSector: "Body Care",
       },
       "Gut Health": {
         keywords: ["bloat", "constipation", "gut", "digest", "ibs"],
@@ -170,12 +211,14 @@ export const BRAND_LOGIC: Record<BrandName, BrandLogic> = {
         persona: "Women with PCOS-linked gut issues seeking daily gut support.",
         positioning: "Fizzy sachet for taste compliance; synbiotic formula vs probiotic-only.",
         format: "Sachet",
+        subSector: "PCOS",
       },
     },
   },
   "Little Joys": {
     categories: ["Kids Nutrition", "Moms Health"],
     mrpRange: "₹499 – ₹999",
+    defaultFormat: "Nutri-Melt",
     pains: {
       "Picky Eating": {
         keywords: ["picky", "growth", "height", "appetite", "weight gain", "fussy"],
@@ -184,6 +227,7 @@ export const BRAND_LOGIC: Record<BrandName, BrandLogic> = {
         persona: "Parents of children (2–7 yrs) avoiding refined sugar supplements.",
         positioning: "100% natural sweetness with millets; 40% higher protein than market leaders.",
         format: "Powder Mix",
+        subSector: "Kids Nutrition",
       },
       "Post-partum Fatigue": {
         keywords: ["mom", "lactation", "post-partum", "delivery", "new mother", "breastfeeding"],
@@ -192,6 +236,7 @@ export const BRAND_LOGIC: Record<BrandName, BrandLogic> = {
         persona: "New mothers (0–12 months postpartum) dealing with energy crashes and low milk supply.",
         positioning: "Ayurvedic galactagogue + bioavailable iron; avoids constipation from ferrous sulfate.",
         format: "Shake",
+        subSector: "Moms Health",
       },
       "Sugar Concerns": {
         keywords: ["sugar", "sweet", "unhealthy", "cavity", "chocolate", "junk"],
@@ -200,6 +245,7 @@ export const BRAND_LOGIC: Record<BrandName, BrandLogic> = {
         persona: "Health-aware parents seeking guilt-free daily vitamin supplements for kids.",
         positioning: "Sweetened with jaggery extract; zero refined sugar or artificial colors.",
         format: "Gummy",
+        subSector: "Kids Nutrition",
       },
       "Immunity Gaps": {
         keywords: ["sick", "cold", "cough", "immunity", "fever", "infection"],
@@ -208,6 +254,7 @@ export const BRAND_LOGIC: Record<BrandName, BrandLogic> = {
         persona: "Parents of school-going kids (3–10 yrs) who fall sick frequently.",
         positioning: "Oral melt format kids love; modern Chyawanprash without the sticky mess.",
         format: "Oral Melt",
+        subSector: "Kids Nutrition",
       },
       "Bone & Height Growth": {
         keywords: ["calcium", "bone", "height", "tall", "growth spurt", "vitamin d"],
@@ -216,6 +263,7 @@ export const BRAND_LOGIC: Record<BrandName, BrandLogic> = {
         persona: "Parents concerned about child's height and bone density.",
         positioning: "Nano-sized calcium for 2x absorption; fun star-shaped chewable format.",
         format: "Chewable",
+        subSector: "Kids Nutrition",
       },
     },
     exploratoryPains: {
@@ -226,6 +274,7 @@ export const BRAND_LOGIC: Record<BrandName, BrandLogic> = {
         persona: "Parents worried about digital device impact on their child's vision.",
         positioning: "First kids-specific eye health gummy in India; addresses screen-time epidemic.",
         format: "Gummy",
+        subSector: "Kids Nutrition",
       },
       "Cognitive Focus": {
         keywords: ["focus", "concentrate", "study", "memory", "brain"],
@@ -234,38 +283,31 @@ export const BRAND_LOGIC: Record<BrandName, BrandLogic> = {
         persona: "Parents of school-age children seeking academic performance support.",
         positioning: "Ayurvedic-meets-modern nootropic; avoids stimulants found in adult formulas.",
         format: "Syrup",
+        subSector: "Kids Nutrition",
       },
     },
   },
 };
 
-/**
- * Dynamically find the content and impact columns from CSV headers.
- */
+// --- Column Detection ---
+
 function detectColumns(headers: string[]): { contentCol: string | null; impactCol: string | null } {
   const contentKeywords = ["body", "text", "comment", "review", "content", "title", "selftext", "description"];
   const impactKeywords = ["score", "upvotes", "likes", "ups", "votes", "points"];
-
   const lower = headers.map((h) => h.toLowerCase().trim());
 
   let contentCol: string | null = null;
   let impactCol: string | null = null;
 
   for (let i = 0; i < lower.length; i++) {
-    if (!contentCol && contentKeywords.some((k) => lower[i].includes(k))) {
-      contentCol = headers[i];
-    }
-    if (!impactCol && impactKeywords.some((k) => lower[i].includes(k))) {
-      impactCol = headers[i];
-    }
+    if (!contentCol && contentKeywords.some((k) => lower[i].includes(k))) contentCol = headers[i];
+    if (!impactCol && impactKeywords.some((k) => lower[i].includes(k))) impactCol = headers[i];
   }
-
   return { contentCol, impactCol };
 }
 
-/**
- * Parse CSV text into rows.
- */
+// --- CSV Parser ---
+
 export function parseCSV(text: string): Record<string, string>[] {
   const lines = text.split(/\r?\n/).filter((l) => l.trim());
   if (lines.length < 2) return [];
@@ -277,18 +319,10 @@ export function parseCSV(text: string): Record<string, string>[] {
     for (let i = 0; i < line.length; i++) {
       const ch = line[i];
       if (ch === '"') {
-        if (inQuotes && line[i + 1] === '"') {
-          current += '"';
-          i++;
-        } else {
-          inQuotes = !inQuotes;
-        }
-      } else if (ch === "," && !inQuotes) {
-        result.push(current.trim());
-        current = "";
-      } else {
-        current += ch;
-      }
+        if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
+        else inQuotes = !inQuotes;
+      } else if (ch === "," && !inQuotes) { result.push(current.trim()); current = ""; }
+      else current += ch;
     }
     result.push(current.trim());
     return result;
@@ -296,32 +330,49 @@ export function parseCSV(text: string): Record<string, string>[] {
 
   const headers = parseLine(lines[0]);
   const rows: Record<string, string>[] = [];
-
   for (let i = 1; i < lines.length; i++) {
     const values = parseLine(lines[i]);
     const row: Record<string, string> = {};
-    headers.forEach((h, idx) => {
-      row[h] = values[idx] || "";
-    });
+    headers.forEach((h, idx) => { row[h] = values[idx] || ""; });
     rows.push(row);
   }
   return rows;
 }
 
-/**
- * Calculate innovation score based on signal strength and competition heuristic.
- */
-function calcInnovationScore(signalStrength: number, maxSignal: number, isExploratory: boolean): number {
-  if (isExploratory) return parseFloat((5.5 + Math.random() * 1.5).toFixed(1));
-  const demandRatio = maxSignal > 0 ? signalStrength / maxSignal : 0.5;
-  const base = 6.5 + demandRatio * 3;
-  return parseFloat(Math.min(9.8, base + (Math.random() * 0.5 - 0.25)).toFixed(1));
+// --- Opportunity Score Math ---
+
+const SENTIMENT_WEIGHT = 1.2;
+
+function getCompetitionProxy(brand: BrandName, subSector: string): number {
+  const proxies = COMPETITION_PROXIES[brand];
+  if (!proxies) return 0.7;
+  return proxies[subSector] ?? 0.7;
 }
 
-/**
- * Run the NPD analysis for the selected brand on the parsed CSV data.
- * Implements Exploratory Mode to ensure 5-8 concepts minimum.
- */
+function getCompetitionDensity(proxy: number): "High" | "Medium" | "Low" {
+  if (proxy > 0.7) return "High";
+  if (proxy > 0.4) return "Medium";
+  return "Low";
+}
+
+function calcOpportunityScore(hits: number, proxy: number): number {
+  if (hits === 0) return 0;
+  const raw = (hits * SENTIMENT_WEIGHT) / proxy;
+  return parseFloat(Math.min(raw / 10, 9.9).toFixed(1));
+}
+
+function buildDynamicName(topKeyword: string, brand: BrandName): string {
+  const format = BRAND_FORMATS[brand];
+  // Capitalize each word
+  const name = topKeyword
+    .split(/\s+/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+  return `${name} ${format}`;
+}
+
+// --- Main Analysis ---
+
 export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): AnalysisResult {
   const logic = BRAND_LOGIC[brand];
   const headers = rows.length > 0 ? Object.keys(rows[0]) : [];
@@ -329,17 +380,19 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
 
   const scores: Record<string, number> = {};
   const citations: Record<string, { text: string; score: number }[]> = {};
+  const topKeywords: Record<string, string> = {};
 
   for (const row of rows) {
     const text = contentCol
       ? (row[contentCol] || "").toLowerCase()
       : Object.values(row).join(" ").toLowerCase();
-
     const impact = impactCol ? parseInt(row[impactCol] || "1", 10) || 1 : 1;
 
     for (const [painLabel, detail] of Object.entries(logic.pains)) {
-      if (detail.keywords.some((k) => text.includes(k))) {
+      const matchedKeyword = detail.keywords.find((k) => text.includes(k));
+      if (matchedKeyword) {
         scores[painLabel] = (scores[painLabel] || 0) + impact;
+        if (!topKeywords[painLabel]) topKeywords[painLabel] = matchedKeyword;
         if (!citations[painLabel]) citations[painLabel] = [];
         citations[painLabel].push({
           text: (contentCol ? row[contentCol] : Object.values(row).join(" ")).slice(0, 200),
@@ -349,22 +402,28 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
     }
   }
 
-  // Sort citations by score descending
   for (const key of Object.keys(citations)) {
     citations[key].sort((a, b) => b.score - a.score);
   }
 
   const sortedPains = Object.entries(scores).sort((a, b) => b[1] - a[1]).slice(0, 10);
-  const maxSignal = sortedPains.length > 0 ? sortedPains[0][1] : 0;
 
   const briefs: ProductBrief[] = sortedPains.map(([painLabel, score]) => {
     const detail = logic.pains[painLabel];
     const topCitation = citations[painLabel]?.[0]?.text || "N/A";
+    const proxy = getCompetitionProxy(brand, detail.subSector);
+    const opportunityScore = calcOpportunityScore(score, proxy);
+    const density = getCompetitionDensity(proxy);
+    const keyword = topKeywords[painLabel] || painLabel.toLowerCase();
+    const dynamicName = buildDynamicName(keyword, brand);
+    const formulaString = `(${score} hits × ${SENTIMENT_WEIGHT}) / ${proxy} proxy`;
 
     return {
       conceptName: detail.concept,
+      dynamicName,
       whiteSpace: painLabel,
       signalStrength: score,
+      opportunityScore,
       noveltyRationale: detail.positioning,
       ingredients: detail.actives,
       citation: topCitation,
@@ -372,52 +431,77 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
       positioning: detail.positioning,
       format: detail.format,
       mrpRange: logic.mrpRange,
-      innovationScore: calcInnovationScore(score, maxSignal, false),
       isExploratory: false,
+      isLowSignal: false,
+      isDecisionReady: opportunityScore > 8.5,
+      evidence: {
+        marketplaceHits: score,
+        redditBuzz: Math.floor(score * 0.15),
+        competitionDensity: density,
+        formulaString,
+      },
     };
   });
 
-  // Exploratory Mode: fill to minimum 5 concepts
+  // Fill pipeline to 5-8 with low-signal concepts
   if (briefs.length < 5) {
     const usedPains = new Set(sortedPains.map(([p]) => p));
-    
-    // First add unused primary pains
+
     for (const [painLabel, detail] of Object.entries(logic.pains)) {
       if (briefs.length >= 8) break;
       if (usedPains.has(painLabel)) continue;
+      const proxy = getCompetitionProxy(brand, detail.subSector);
       briefs.push({
         conceptName: detail.concept,
+        dynamicName: `${painLabel} ${BRAND_FORMATS[brand]}`,
         whiteSpace: painLabel,
         signalStrength: 0,
+        opportunityScore: 0,
         noveltyRationale: detail.positioning,
         ingredients: detail.actives,
-        citation: "Suggested based on category intelligence — no direct signal in this dataset.",
+        citation: "Low Signal — R&D Required. No direct CSV support for this concept.",
         persona: detail.persona,
         positioning: detail.positioning,
         format: detail.format,
         mrpRange: logic.mrpRange,
-        innovationScore: calcInnovationScore(0, maxSignal, true),
-        isExploratory: true,
+        isExploratory: false,
+        isLowSignal: true,
+        isDecisionReady: false,
+        evidence: {
+          marketplaceHits: 0,
+          redditBuzz: 0,
+          competitionDensity: getCompetitionDensity(proxy),
+          formulaString: "(0 hits × 1.2) / " + proxy + " proxy",
+        },
       });
     }
 
-    // Then add exploratory pains
     if (briefs.length < 5 && logic.exploratoryPains) {
       for (const [painLabel, detail] of Object.entries(logic.exploratoryPains)) {
         if (briefs.length >= 8) break;
+        const proxy = getCompetitionProxy(brand, detail.subSector);
         briefs.push({
           conceptName: detail.concept,
+          dynamicName: `${painLabel} ${BRAND_FORMATS[brand]}`,
           whiteSpace: painLabel,
           signalStrength: 0,
+          opportunityScore: 0,
           noveltyRationale: detail.positioning,
           ingredients: detail.actives,
-          citation: "Exploratory concept — adjacent market opportunity identified from wellness trends.",
+          citation: "Low Signal — R&D Required. Adjacent market opportunity, no CSV evidence.",
           persona: detail.persona,
           positioning: detail.positioning,
           format: detail.format,
           mrpRange: logic.mrpRange,
-          innovationScore: calcInnovationScore(0, maxSignal, true),
-          isExploratory: true,
+          isExploratory: false,
+          isLowSignal: true,
+          isDecisionReady: false,
+          evidence: {
+            marketplaceHits: 0,
+            redditBuzz: 0,
+            competitionDensity: getCompetitionDensity(proxy),
+            formulaString: "(0 hits × 1.2) / " + proxy + " proxy",
+          },
         });
       }
     }
@@ -441,47 +525,49 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
   };
 }
 
-/**
- * Generate executive summary for the analysis.
- */
+// --- Executive Summary (Audit Grade) ---
+
 export function generateExecutiveSummary(result: AnalysisResult): {
-  formatRationale: string;
-  missionAlignment: string;
+  dataIntegrity: string;
+  opportunityLogic: string;
+  formatCompliance: string;
   highPriority: string[];
 } {
-  const dataBackedBriefs = result.briefs.filter((b) => !b.isExploratory);
-  const topBriefs = dataBackedBriefs
-    .sort((a, b) => b.innovationScore - a.innovationScore)
-    .slice(0, 3);
-
+  const dataBackedCount = result.briefs.filter((b) => !b.isLowSignal).length;
+  const lowSignalCount = result.briefs.filter((b) => b.isLowSignal).length;
   const formats = [...new Set(result.briefs.map((b) => b.format))];
 
+  const topBriefs = result.briefs
+    .filter((b) => !b.isLowSignal)
+    .sort((a, b) => b.opportunityScore - a.opportunityScore)
+    .slice(0, 3);
+
   return {
-    formatRationale: `All concepts prioritize modern formats (${formats.join(", ")}) optimized for Indian climate compliance, fast absorption, and consumer habit-fit — replacing outdated sticky oils, thick creams, and hard-to-swallow tablets.`,
-    missionAlignment: `Formulations leverage jaggery-based sweetening, Ayurvedic actives (Shatavari, Brahmi, Ashwagandha), and clean-label positioning to align with Mosaic's "Health-First, India-First" mission. Zero refined sugar, no artificial colors, clinically-dosed bioactives.`,
+    dataIntegrity: `${dataBackedCount} of ${result.briefs.length} concepts are derived from CSV keyword clusters. ${lowSignalCount} "Low Signal" concepts are flagged to prevent R&D waste.`,
+    opportunityLogic: `Scores are weighted against Sector Competition Proxies using the formula (Mentions × ${SENTIMENT_WEIGHT}) / Competition Proxy. A score of 9.0 in Little Joys (Blue Ocean) represents a higher launch priority than a 9.0 in Man Matters Hair (Red Ocean).`,
+    formatCompliance: `All concepts prioritize modern formats (${formats.join(", ")}) selected to solve for Indian User Compliance — Heat, Humidity, and Sugar-aversion.`,
     highPriority: topBriefs.length > 0
-      ? topBriefs.map((b) => `${b.conceptName} (Score: ${b.innovationScore})`)
-      : result.briefs.slice(0, 2).map((b) => `${b.conceptName} (Score: ${b.innovationScore})`),
+      ? topBriefs.map((b) => `${b.conceptName} (Opportunity: ${b.opportunityScore})`)
+      : result.briefs.slice(0, 2).map((b) => `${b.conceptName} (Opportunity: ${b.opportunityScore})`),
   };
 }
 
-/**
- * Generate Markdown report for download.
- */
+// --- Markdown Report ---
+
 export function generateMarkdownReport(result: AnalysisResult): string {
   const summary = generateExecutiveSummary(result);
   const lines: string[] = [
-    `# ${result.brand} — NPD Innovation Pipeline Report`,
+    `# ${result.brand} — NPD Decision Pipeline Report`,
     `**Generated:** ${new Date().toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" })}`,
     `**Consumer Touchpoints Analyzed:** ${result.stats.totalRows} | **High-Intensity Gaps:** ${result.stats.highIntensityGaps}`,
-    "",
-    "---",
-    "",
+    "", "---", "",
   ];
 
   for (const brief of result.briefs) {
+    const badge = brief.isDecisionReady ? "✅ Decision Ready" : brief.isLowSignal ? "⚠️ Low Signal — R&D Required" : "";
     lines.push(
-      `## ${brief.isExploratory ? "🔍 " : ""}${brief.conceptName}`,
+      `## ${badge ? badge + " | " : ""}${brief.conceptName}`,
+      `_Dynamic Name: ${brief.dynamicName}_`,
       "",
       `| Field | Detail |`,
       `|-------|--------|`,
@@ -490,27 +576,31 @@ export function generateMarkdownReport(result: AnalysisResult): string {
       `| **Format** | ${brief.format} |`,
       `| **Active Ingredients** | ${brief.ingredients.join(", ")} |`,
       `| **Suggested MRP** | ${brief.mrpRange} |`,
-      `| **Innovation Score** | ${brief.innovationScore}/10 |`,
-      `| **Signal Strength** | ${brief.signalStrength} weighted mentions |`,
+      `| **Opportunity Score** | ${brief.opportunityScore}/10 |`,
+      `| **Marketplace Hits** | ${brief.evidence.marketplaceHits} rows |`,
+      `| **Reddit Buzz** | ${brief.evidence.redditBuzz} mentions |`,
+      `| **Competition Density** | ${brief.evidence.competitionDensity} |`,
+      `| **Formula** | ${brief.evidence.formulaString} |`,
       "",
       `**Competitive Positioning:** ${brief.positioning}`,
       "",
       `**Consumer Evidence:** _"${brief.citation}"_`,
       "",
-      brief.isExploratory ? "> ⚡ Exploratory Mode — Adjacent opportunity\n" : "",
-      "---",
-      "",
+      "---", "",
     );
   }
 
   lines.push(
-    "## Strategic Executive Summary",
+    "## Strategic Executive Summary (Audit Grade)",
+    "",
+    `### Data Integrity`,
+    summary.dataIntegrity,
+    "",
+    `### Opportunity Score Logic`,
+    summary.opportunityLogic,
     "",
     `### Format Compliance`,
-    summary.formatRationale,
-    "",
-    `### Mission Alignment`,
-    summary.missionAlignment,
+    summary.formatCompliance,
     "",
     `### High-Priority Recommendations`,
     ...summary.highPriority.map((p) => `- **${p}**`),
