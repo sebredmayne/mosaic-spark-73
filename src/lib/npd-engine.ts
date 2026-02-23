@@ -46,6 +46,409 @@ export const PORTFOLIO_GUARDRAILS: Record<BrandName, string[]> = {
   ],
 };
 
+// --- Level 2.5 Strategic Intelligence: Portfolio Memory ---
+
+interface PortfolioProduct {
+  brand: BrandName;
+  subSector: string;
+  productName: string;
+  format: string;
+  actives: string[];
+  persona: string;
+  claims: string;
+}
+
+function normalizeText(value: string): string {
+  return value.toLowerCase().trim();
+}
+
+export const PORTFOLIO_MEMORY: Record<BrandName, PortfolioProduct[]> = {
+  "Be Bodywise": [
+    {
+      brand: "Be Bodywise",
+      subSector: normalizeText("Hair"),
+      productName: normalizeText("Biotin Hair Gummies"),
+      format: normalizeText("Gummies"),
+      actives: ["Biotin", "Vitamins B9 & D2", "Zinc"].map(normalizeText),
+      persona: normalizeText("Women 20–40 with hair fall or thinning"),
+      claims: normalizeText("Hair growth support, reduced hair fall, improved hair strength"),
+    },
+    {
+      brand: "Be Bodywise",
+      subSector: normalizeText("Hair"),
+      productName: normalizeText("Rosemary & Redensyl Hair Serum"),
+      format: normalizeText("Serum"),
+      actives: ["Rosemary Oil", "Redensyl", "Anagain", "Caffeine"].map(normalizeText),
+      persona: normalizeText("Women with early-stage hair thinning"),
+      claims: normalizeText("Hair regrowth, increased density, reduced shedding"),
+    },
+    {
+      brand: "Be Bodywise",
+      subSector: normalizeText("Hair"),
+      productName: normalizeText("Hair Health Gummies (Postpartum Support)"),
+      format: normalizeText("Gummies"),
+      actives: ["Biotin", "Vitamins B9 & D2", "Zinc"].map(normalizeText),
+      persona: normalizeText("Postpartum women experiencing hair loss"),
+      claims: normalizeText("Postpartum hair regrowth, reduced thinning, improved hair quality"),
+    },
+    {
+      brand: "Be Bodywise",
+      subSector: normalizeText("Skin"),
+      productName: normalizeText("Salicylic Body Wash"),
+      format: normalizeText("Body Wash"),
+      actives: ["Salicylic Acid", "Glycolic Acid", "Lactic Acid", "Niacinamide", "Ceramides"].map(normalizeText),
+      persona: normalizeText("Women with body acne or keratosis pilaris"),
+      claims: normalizeText("Body acne control, exfoliation, smoother and clearer skin"),
+    },
+    {
+      brand: "Be Bodywise",
+      subSector: normalizeText("Skin"),
+      productName: normalizeText("Niacinamide Body Lotion"),
+      format: normalizeText("Lotion"),
+      actives: ["Niacinamide", "Ceramides", "Hyaluronic Acid"].map(normalizeText),
+      persona: normalizeText("Women with dry or uneven body skin"),
+      claims: normalizeText("Deep hydration, barrier repair, tone-evening"),
+    },
+    {
+      brand: "Be Bodywise",
+      subSector: normalizeText("Skin"),
+      productName: normalizeText("Kojic Acid Cream"),
+      format: normalizeText("Cream"),
+      actives: ["Kojic Acid", "Niacinamide"].map(normalizeText),
+      persona: normalizeText("Women with pigmentation and dark spots"),
+      claims: normalizeText("Skin brightening, dark spot reduction, even skin tone"),
+    },
+    {
+      brand: "Be Bodywise",
+      subSector: normalizeText("Body"),
+      productName: normalizeText("Underarm AHA/BHA Roll-On"),
+      format: normalizeText("Roll-On"),
+      actives: ["Lactic Acid", "Salicylic Acid", "Niacinamide"].map(normalizeText),
+      persona: normalizeText("Women with underarm darkness, odor, or bumps"),
+      claims: normalizeText("Underarm pigmentation reduction, odor control, gentle exfoliation"),
+    },
+    {
+      brand: "Be Bodywise",
+      subSector: normalizeText("Body"),
+      productName: normalizeText("Urea Foot Cream"),
+      format: normalizeText("Cream"),
+      actives: ["Urea", "Emollients"].map(normalizeText),
+      persona: normalizeText("Women with rough, cracked heels and very dry feet"),
+      claims: normalizeText("Intensive hydration, callus softening, smoother heels"),
+    },
+    {
+      brand: "Be Bodywise",
+      subSector: normalizeText("Body"),
+      productName: normalizeText("Magnesium Muscle Relief Lotion"),
+      format: normalizeText("Lotion"),
+      actives: ["Magnesium", "Soothing Botanicals"].map(normalizeText),
+      persona: normalizeText("Women with muscle soreness or body fatigue"),
+      claims: normalizeText("Muscle relaxation, soreness relief, faster recovery"),
+    },
+    {
+      brand: "Be Bodywise",
+      subSector: normalizeText("Sun"),
+      productName: normalizeText("Ultra Light Sunscreen SPF 50"),
+      format: normalizeText("Lotion"),
+      actives: ["SPF 50+ UV Filters", "Ceramides", "Sodium Hyaluronate", "Niacinamide"].map(normalizeText),
+      persona: normalizeText("Women seeking daily high-protection sunscreen with no white cast"),
+      claims: normalizeText("Broad-spectrum UV protection, lightweight texture, no white cast, non-greasy"),
+    },
+    {
+      brand: "Be Bodywise",
+      subSector: normalizeText("Face"),
+      productName: normalizeText("Pigmentation & Wrinkle Corrector Serum"),
+      format: normalizeText("Serum"),
+      actives: ["Niacinamide", "Retinol"].map(normalizeText),
+      persona: normalizeText("Women with pigmentation, fine lines, or early aging"),
+      claims: normalizeText("Anti-pigmentation, anti-aging, smoother and firmer skin"),
+    },
+    {
+      brand: "Be Bodywise",
+      subSector: normalizeText("Face"),
+      productName: normalizeText("Lip Repair Balm/Oil"),
+      format: normalizeText("Balm/Oil"),
+      actives: ["Shea Butter", "Vitamin E", "Plant Oils"].map(normalizeText),
+      persona: normalizeText("Women with dry or chapped lips"),
+      claims: normalizeText("Deep moisturization, barrier repair, softer lips"),
+    },
+    {
+      brand: "Be Bodywise",
+      subSector: normalizeText("Health / PCOS"),
+      productName: normalizeText("PCOS Balance Capsules"),
+      format: normalizeText("Capsules"),
+      actives: ["Inositol Blend", "Chromium", "Folate"].map(normalizeText),
+      persona: normalizeText("Women with PCOS symptoms such as irregular cycles or acne"),
+      claims: normalizeText("Cycle regularity, hormonal balance support, metabolic support"),
+    },
+    {
+      brand: "Be Bodywise",
+      subSector: normalizeText("Health / PCOS"),
+      productName: normalizeText("Period Pain Relief Gummies"),
+      format: normalizeText("Gummies"),
+      actives: ["Magnesium", "Chasteberry", "Vitamin B6"].map(normalizeText),
+      persona: normalizeText("Women with menstrual cramps and PMS"),
+      claims: normalizeText("Period pain relief, PMS symptom reduction, mood and comfort support"),
+    },
+    {
+      brand: "Be Bodywise",
+      subSector: normalizeText("Intimate Care"),
+      productName: normalizeText("Intimate Wash"),
+      format: normalizeText("Foam Wash"),
+      actives: ["Lactic Acid", "Tea Tree Oil", "Aloe Vera"].map(normalizeText),
+      persona: normalizeText("Women seeking gentle daily intimate hygiene"),
+      claims: normalizeText("pH-balanced cleansing, odor control, reduced irritation"),
+    },
+  ],
+  "Man Matters": [
+    {
+      brand: "Man Matters",
+      subSector: normalizeText("Hair"),
+      productName: normalizeText("Minoxidil 5% Hair Regrowth Solution"),
+      format: normalizeText("Topical Solution"),
+      actives: ["Minoxidil 5%"].map(normalizeText),
+      persona: normalizeText("Men with Stage 2–4 pattern hair loss"),
+      claims: normalizeText("Clinically proven hair regrowth, reduced hair fall"),
+    },
+    {
+      brand: "Man Matters",
+      subSector: normalizeText("Hair"),
+      productName: normalizeText("Redensyl Hair Tonic"),
+      format: normalizeText("Tonic/Serum"),
+      actives: ["Redensyl", "Anagain", "Aminexil", "Biotin"].map(normalizeText),
+      persona: normalizeText("Men with early-stage thinning or reduced density"),
+      claims: normalizeText("Thicker hair, reduced shedding, improved hair density"),
+    },
+    {
+      brand: "Man Matters",
+      subSector: normalizeText("Hair"),
+      productName: normalizeText("Anti-Dandruff Shampoo (ZPTO/Ketoconazole)"),
+      format: normalizeText("Shampoo"),
+      actives: ["Ketoconazole", "Zinc Pyrithione"].map(normalizeText),
+      persona: normalizeText("Men with dandruff, flakes, or itchy scalp"),
+      claims: normalizeText("Dandruff reduction, itch relief, scalp calming"),
+    },
+    {
+      brand: "Man Matters",
+      subSector: normalizeText("Hair"),
+      productName: normalizeText("DHT Blocking Shampoo"),
+      format: normalizeText("Shampoo"),
+      actives: ["Caffeine", "Saw Palmetto", "Argan Oil", "Biotin"].map(normalizeText),
+      persona: normalizeText("Men with hair fall linked to DHT"),
+      claims: normalizeText("Reduced hair fall, scalp health, volume support"),
+    },
+    {
+      brand: "Man Matters",
+      subSector: normalizeText("Hair"),
+      productName: normalizeText("Derma Roller 0.5mm"),
+      format: normalizeText("Device"),
+      actives: ["Microneedling Roller"].map(normalizeText),
+      persona: normalizeText("Men using topical hair or beard actives who want better penetration"),
+      claims: normalizeText("Enhanced absorption of serums, stimulation of scalp and beard follicles"),
+    },
+    {
+      brand: "Man Matters",
+      subSector: normalizeText("Hair"),
+      productName: normalizeText("Water Softener Shower Filter"),
+      format: normalizeText("Device"),
+      actives: ["Mechanical Filtration Media"].map(normalizeText),
+      persona: normalizeText("Men living in hard-water cities with hair fall or scalp issues"),
+      claims: normalizeText("Reduced hardness, less mineral build-up, supportive for hair and scalp health"),
+    },
+    {
+      brand: "Man Matters",
+      subSector: normalizeText("Hair"),
+      productName: normalizeText("Biotin Hair Gummies"),
+      format: normalizeText("Gummies"),
+      actives: ["Biotin", "Vitamins", "Zinc"].map(normalizeText),
+      persona: normalizeText("Men with general hair fall or poor hair quality"),
+      claims: normalizeText("Hair strength, reduced breakage, improved hair health"),
+    },
+    {
+      brand: "Man Matters",
+      subSector: normalizeText("Beard"),
+      productName: normalizeText("Beard Growth Oil"),
+      format: normalizeText("Oil"),
+      actives: ["Minoxidil/BeardMax Complex", "Nourishing Oils", "Biotin"].map(normalizeText),
+      persona: normalizeText("Men 18–30 with patchy or uneven beard growth"),
+      claims: normalizeText("Fuller beard growth, improved density, reduced patchiness"),
+    },
+    {
+      brand: "Man Matters",
+      subSector: normalizeText("Skin"),
+      productName: normalizeText("Salicylic Face Wash"),
+      format: normalizeText("Face Wash"),
+      actives: ["Salicylic Acid", "Mild Surfactants"].map(normalizeText),
+      persona: normalizeText("Men with acne-prone or oily skin"),
+      claims: normalizeText("Acne control, oil control, gentle exfoliation"),
+    },
+    {
+      brand: "Man Matters",
+      subSector: normalizeText("Performance"),
+      productName: normalizeText("Shilajit Resin/Liquid"),
+      format: normalizeText("Resin/Liquid"),
+      actives: ["Purified Shilajit", "Fulvic Acid"].map(normalizeText),
+      persona: normalizeText("Men seeking stamina, vitality, and performance support"),
+      claims: normalizeText("Improved energy, stamina, and overall vitality"),
+    },
+    {
+      brand: "Man Matters",
+      subSector: normalizeText("Performance"),
+      productName: normalizeText("Ashwagandha Tablets/Capsules"),
+      format: normalizeText("Tablets/Capsules"),
+      actives: ["Ashwagandha Extract"].map(normalizeText),
+      persona: normalizeText("Men with stress, anxiety, or poor sleep quality"),
+      claims: normalizeText("Stress reduction, better sleep, improved resilience"),
+    },
+    {
+      brand: "Man Matters",
+      subSector: normalizeText("Performance"),
+      productName: normalizeText("Creatine Monohydrate Powder"),
+      format: normalizeText("Powder"),
+      actives: ["Creatine Monohydrate", "Micronised Creatine"].map(normalizeText),
+      persona: normalizeText("Men focused on strength training and muscle gain"),
+      claims: normalizeText("Improved strength, power, and muscle performance"),
+    },
+    {
+      brand: "Man Matters",
+      subSector: normalizeText("Performance"),
+      productName: normalizeText("Endure Long Last Spray"),
+      format: normalizeText("Spray"),
+      actives: ["Lidocaine"].map(normalizeText),
+      persona: normalizeText("Men with premature ejaculation concerns"),
+      claims: normalizeText("Longer-lasting performance, reduced sensitivity"),
+    },
+    {
+      brand: "Man Matters",
+      subSector: normalizeText("Performance"),
+      productName: normalizeText("Tostero Capsules"),
+      format: normalizeText("Capsules"),
+      actives: ["Testosterone-Supporting Botanicals"].map(normalizeText),
+      persona: normalizeText("Men with low stamina, low libido, or reduced vitality"),
+      claims: normalizeText("Testosterone support, stamina and libido enhancement"),
+    },
+    {
+      brand: "Man Matters",
+      subSector: normalizeText("Performance"),
+      productName: normalizeText("Whey Protein"),
+      format: normalizeText("Powder"),
+      actives: ["Whey Protein Concentrate/Isolate", "BCAAs"].map(normalizeText),
+      persona: normalizeText("Men with muscle-building or recovery goals"),
+      claims: normalizeText("Muscle growth support, recovery, improved protein intake"),
+    },
+  ],
+  "Little Joys": [
+    {
+      brand: "Little Joys",
+      subSector: normalizeText("Kids Nutrition"),
+      productName: normalizeText("Nutrimix Chocolate (Ragi/Bajra)"),
+      format: normalizeText("Drink Mix Powder"),
+      actives: ["Ragi", "Bajra", "Oats", "DHA", "Jaggery/Dates"].map(normalizeText),
+      persona: normalizeText("Kids 2–6 years needing growth and weight support"),
+      claims: normalizeText("Height and weight support, daily nutrition, clean sweetening with jaggery"),
+    },
+    {
+      brand: "Little Joys",
+      subSector: normalizeText("Kids Nutrition"),
+      productName: normalizeText("Multivitamin Gummies"),
+      format: normalizeText("Gummies"),
+      actives: ["Essential Vitamins", "Minerals"].map(normalizeText),
+      persona: normalizeText("Kids 2+ with general nutrition gaps"),
+      claims: normalizeText("Daily multivitamin support, immunity and energy maintenance"),
+    },
+    {
+      brand: "Little Joys",
+      subSector: normalizeText("Kids Nutrition"),
+      productName: normalizeText("DHA Brain Gummies"),
+      format: normalizeText("Gummies"),
+      actives: ["DHA", "Vitamins", "Supportive Nutrients"].map(normalizeText),
+      persona: normalizeText("Kids 2+ needing brain and focus support"),
+      claims: normalizeText("Brain development, memory and focus support"),
+    },
+    {
+      brand: "Little Joys",
+      subSector: normalizeText("Kids Nutrition"),
+      productName: normalizeText("Calcium D3 Stars"),
+      format: normalizeText("Chewable"),
+      actives: ["Calcium", "Vitamin D3"].map(normalizeText),
+      persona: normalizeText("Kids with bone and height growth needs"),
+      claims: normalizeText("Bone strength, healthy height gain, improved calcium intake"),
+    },
+    {
+      brand: "Little Joys",
+      subSector: normalizeText("Kids Nutrition"),
+      productName: normalizeText("Eye Health Gummies (Amla)"),
+      format: normalizeText("Gummies"),
+      actives: ["Amla", "Antioxidants"].map(normalizeText),
+      persona: normalizeText("Kids with high screen time or weak eye health"),
+      claims: normalizeText("Eye health support, antioxidant protection"),
+    },
+    {
+      brand: "Little Joys",
+      subSector: normalizeText("Kids Snacks"),
+      productName: normalizeText("Millet Pancake Mix (Chocolate)"),
+      format: normalizeText("Baking Mix"),
+      actives: ["Millets", "Cocoa", "Natural Sweeteners"].map(normalizeText),
+      persona: normalizeText("Kids wanting sweet breakfast or snack with better nutrition"),
+      claims: normalizeText("Healthier pancakes, no refined sugar, millet-based nutrition"),
+    },
+    {
+      brand: "Little Joys",
+      subSector: normalizeText("Kids Snacks"),
+      productName: normalizeText("Chocolate Hazelnut Spread (Zero Sugar)"),
+      format: normalizeText("Spread"),
+      actives: ["Hazelnut", "Cocoa", "Jaggery or Natural Sweetener"].map(normalizeText),
+      persona: normalizeText("Kids who like chocolate spreads but need low-sugar options"),
+      claims: normalizeText("Healthier chocolate spread, zero refined sugar, daily snack upgrade"),
+    },
+    {
+      brand: "Little Joys",
+      subSector: normalizeText("Kids Snacks"),
+      productName: normalizeText("Tomato Sauce (No Onion/Garlic)"),
+      format: normalizeText("Sauce"),
+      actives: ["Tomatoes", "Natural Seasoning", "No Onion/Garlic"].map(normalizeText),
+      persona: normalizeText("Kids and families avoiding onion/garlic or seeking milder ketchup"),
+      claims: normalizeText("Kid-friendly ketchup, clean label, no onion/garlic"),
+    },
+    {
+      brand: "Little Joys",
+      subSector: normalizeText("Kids Nutrition"),
+      productName: normalizeText("Nutrimix Strawberry/Other Flavours"),
+      format: normalizeText("Drink Mix Powder"),
+      actives: ["Millets", "Oats", "DHA", "Natural Sweeteners"].map(normalizeText),
+      persona: normalizeText("Kids 7–12 years needing height and brain support"),
+      claims: normalizeText("Growth and cognitive support, daily balanced nutrition"),
+    },
+    {
+      brand: "Little Joys",
+      subSector: normalizeText("Kids Personal Care"),
+      productName: normalizeText("Fluoride-Free Kids Toothpaste"),
+      format: normalizeText("Toothpaste"),
+      actives: ["Neem", "Aloe", "Natural Flavours"].map(normalizeText),
+      persona: normalizeText("Kids 2+ needing gentle oral care"),
+      claims: normalizeText("Cavity prevention support, gentle cleansing, fluoride-free formulation"),
+    },
+    {
+      brand: "Little Joys",
+      subSector: normalizeText("Kids Personal Care"),
+      productName: normalizeText("2-in-1 Bodywash & Shampoo"),
+      format: normalizeText("Body Wash/Shampoo"),
+      actives: ["Aloe Vera", "Mild Cleansers", "Natural Oils"].map(normalizeText),
+      persona: normalizeText("Kids needing gentle daily bath care"),
+      claims: normalizeText("Mild cleansing for skin and hair, tear-free, suitable for daily use"),
+    },
+    {
+      brand: "Little Joys",
+      subSector: normalizeText("Kids Personal Care"),
+      productName: normalizeText("Kids Sunscreen Stick"),
+      format: normalizeText("Sunscreen Stick"),
+      actives: ["Mineral/Hybrid UV Filters", "Soothing Botanicals"].map(normalizeText),
+      persona: normalizeText("Kids with sun exposure during outdoor play"),
+      claims: normalizeText("Broad-spectrum UV protection, easy on-the-go application, kid-friendly format"),
+    },
+  ],
+};
+
 // DUAL-SCANNER KEYWORDS
 const NEGATIVE_KEYWORDS = [
   "didn't work", "waste of money", "saw no difference", "useless", "disappointed",
@@ -70,12 +473,182 @@ const POSITIVE_KEYWORDS = [
   "nothing compares", "top tier", "10/10", "elite"
 ];
 
+// --- Fuzzy Ingredient + Text Similarity (Token-Based Intersection) ---
+
+function normalizeForTokens(value: string): string {
+  return value.toLowerCase().trim();
+}
+
+function tokenize(value: string): string[] {
+  return normalizeForTokens(value)
+    .split(/[\s,+/()&-]+/)
+    .map((t) => t.replace(/[^a-z0-9]/g, ""))
+    .filter((t) => t.length > 2);
+}
+
+function ingredientsLooselyMatch(engineActive: string, portfolioActive: string): boolean {
+  const ea = normalizeForTokens(engineActive);
+  const pa = normalizeForTokens(portfolioActive);
+  if (!ea || !pa) return false;
+  if (ea === pa) return true;
+  if (ea.includes(pa) || pa.includes(ea)) return true;
+  const eTokens = tokenize(ea);
+  const pTokens = tokenize(pa);
+  return eTokens.some((t) => pTokens.includes(t));
+}
+
+function jaccardSimilarity(a: string, b: string): number {
+  const aTokens = new Set(tokenize(a));
+  const bTokens = new Set(tokenize(b));
+  if (aTokens.size === 0 || bTokens.size === 0) return 0;
+  let intersection = 0;
+  for (const t of aTokens) {
+    if (bTokens.has(t)) intersection++;
+  }
+  const union = aTokens.size + bTokens.size - intersection;
+  return union === 0 ? 0 : intersection / union;
+}
+
+interface StrategicFitResult {
+  totalSimilarity: number;
+  ingredientOverlap: number;
+  formatMatch: number;
+  personaAlignment: number;
+  claimMatch: number;
+}
+
 // Competition proxies per sub-sector (0.1 = Blue Ocean, 0.9 = Red Ocean)
 export const COMPETITION_PROXIES: Record<string, Record<string, number>> = {
   "Man Matters": { Hair: 0.9, Performance: 0.6, Beard: 0.7 },
   "Be Bodywise": { Skin: 0.8, PCOS: 0.4, "Body Care": 0.6 },
   "Little Joys": { "Kids Nutrition": 0.5, "Moms Health": 0.3 },
 };
+
+// Weighted Strategic Fit:
+// - Ingredient Overlap (40%)
+// - Format Match (20%)
+// - Persona Alignment (20%)
+// - Claim Match (20%)
+export function calculateStrategicFit(proposed: ProductBrief, brand: BrandName): StrategicFitResult {
+  const portfolio = PORTFOLIO_MEMORY[brand] || [];
+  if (!portfolio.length) {
+    return { totalSimilarity: 0, ingredientOverlap: 0, formatMatch: 0, personaAlignment: 0, claimMatch: 0 };
+  }
+
+  let best: StrategicFitResult = {
+    totalSimilarity: 0,
+    ingredientOverlap: 0,
+    formatMatch: 0,
+    personaAlignment: 0,
+    claimMatch: 0,
+  };
+
+  const proposedFormat = normalizeForTokens(proposed.format);
+  const proposedPersona = proposed.persona || "";
+  const proposedClaimsBase = `${proposed.whiteSpace || ""} ${proposed.positioning || ""}`;
+
+  for (const sku of portfolio) {
+    const skuFormat = sku.format; // already normalized in PORTFOLIO_MEMORY
+
+    let ingredientOverlap = 0;
+    if (proposed.ingredients.length > 0) {
+      let matchCount = 0;
+      for (const engineActive of proposed.ingredients) {
+        if (sku.actives.some((pa) => ingredientsLooselyMatch(engineActive, pa))) {
+          matchCount++;
+        }
+      }
+      ingredientOverlap = matchCount / proposed.ingredients.length;
+    }
+
+    const formatMatch = proposedFormat && skuFormat
+      ? (proposedFormat === skuFormat ? 1 : 0)
+      : 0;
+
+    const personaAlignment = jaccardSimilarity(proposedPersona, sku.persona);
+    const claimMatch = jaccardSimilarity(proposedClaimsBase, sku.claims);
+
+    const totalSimilarity =
+      ingredientOverlap * 0.4 +
+      formatMatch * 0.2 +
+      personaAlignment * 0.2 +
+      claimMatch * 0.2;
+
+    if (totalSimilarity > best.totalSimilarity) {
+      best = { totalSimilarity, ingredientOverlap, formatMatch, personaAlignment, claimMatch };
+    }
+  }
+
+  return best;
+}
+
+function clampOpportunityScore(value: number): number {
+  return parseFloat(Math.max(0, Math.min(value, 9.9)).toFixed(1));
+}
+
+function getTopPortfolioActives(brand: BrandName, limit: number): string[] {
+  const portfolio = PORTFOLIO_MEMORY[brand] || [];
+  const counts: Record<string, number> = {};
+  for (const sku of portfolio) {
+    for (const active of sku.actives) {
+      counts[active] = (counts[active] || 0) + 1;
+    }
+  }
+  return Object.entries(counts)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, limit)
+    .map(([active]) => active);
+}
+
+function applyLevel25StrategicLayer(brief: ProductBrief, brand: BrandName, baseScore: number): ProductBrief {
+  const strategicFit = calculateStrategicFit({ ...brief, opportunityScore: baseScore }, brand);
+
+  let multiplier = 1;
+  let lane: Swimlane = "high-signal";
+  let tag: ScannerTag = null;
+  let reason = "No strategic multiplier triggered; defaulting to Growth lane (high-signal).";
+
+  const cannibalizationPenaltyHit = strategicFit.totalSimilarity > 0.6;
+  const formatGapBonusHit = strategicFit.ingredientOverlap > 0.5 && strategicFit.formatMatch === 0;
+  const whiteSpaceBonusHit = strategicFit.totalSimilarity < 0.2 && baseScore > 7;
+
+  const sim = strategicFit.totalSimilarity;
+
+  if (cannibalizationPenaltyHit) {
+    multiplier = 0.5;
+    lane = "v2-optimization";
+    tag = "portfolio-optimization";
+    reason = `High cannibalization risk detected (Similarity: ${sim.toFixed(2)}); routing to a V2 optimization of existing SKU. Fix reported friction in the delivery system.`;
+  } else if (formatGapBonusHit) {
+    multiplier = 1.25;
+    lane = "competitor-lovemark";
+    tag = "love-mark-gap";
+    const ingPct = (strategicFit.ingredientOverlap * 100).toFixed(0);
+    reason = `High format-gap detected (Ingredient overlap: ${ingPct}%, format not in portfolio); leveraging existing active base into a new delivery system that consumers love.`;
+  } else if (whiteSpaceBonusHit) {
+    multiplier = 1.35;
+    lane = "high-signal";
+    tag = "innovation";
+    reason = `White-space detected (Similarity: ${sim.toFixed(2)}, market intensity > 7): blue-ocean opportunity; prioritize as high-signal innovation.`;
+  } else {
+    reason = "No strategic multiplier triggered; defaulting to Growth lane (high-signal).";
+  }
+
+  const finalOpportunityScore = clampOpportunityScore(baseScore * multiplier);
+
+  return {
+    ...brief,
+    opportunityScore: finalOpportunityScore,
+    isDecisionReady: finalOpportunityScore > 8.0,
+    noveltyRationale: `${brief.noveltyRationale} | ${reason}`,
+    scannerTag: tag,
+    swimlane: lane,
+    evidence: {
+      ...brief.evidence,
+      formulaString: `${brief.evidence.formulaString} | Level 2.5 ×${multiplier} => ${finalOpportunityScore}`,
+    },
+  };
+}
 
 export interface EvidencePanel {
   marketplaceHits: number;
@@ -593,39 +1166,21 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
         NEGATIVE_KEYWORDS.some(k => text.toLowerCase().includes(k))
       );
 
-      const isPortfolioRelated = isInPortfolio(brand, painLabel.toLowerCase()) ||
-                                 isInPortfolio(brand, detail.concept.toLowerCase());
-
-      let scannerTag: ScannerTag = null;
-      let targetSwimlane: Swimlane = "high-signal";
-
-      if (isPortfolioRelated && hasFrictionSentiment) {
-          targetSwimlane = "v2-optimization";
-          scannerTag = "portfolio-optimization";
-      } else if (!isPortfolioRelated && hasLoveMarkSentiment) {
-          targetSwimlane = "competitor-lovemark";
-          scannerTag = "love-mark-gap";
-      } else if (!isPortfolioRelated && hasFrictionSentiment) {
-          targetSwimlane = "high-signal";
-          scannerTag = "innovation";
-      } else if (isPortfolioRelated) {
-          targetSwimlane = "v2-optimization";
-          scannerTag = "portfolio-optimization";
-      }
-
       const proxy = getCompetitionProxy(brand, detail.subSector);
       const redditBuzz = Math.floor(score * 0.25);
-      const opportunityScore = calcOpportunityScore(score, redditBuzz, proxy, scannerTag === "love-mark-gap");
+      const baseScore = calcOpportunityScore(score, redditBuzz, proxy, hasLoveMarkSentiment);
 
-      return {
+      const baseBrief: ProductBrief = {
         conceptName: detail.concept,
         dynamicName: buildDynamicName(matchedKeywords[painLabel], brand, detail.format),
         whiteSpace: painLabel,
         signalStrength: score,
-        opportunityScore,
+        opportunityScore: baseScore,
         noveltyRationale: hasLoveMarkSentiment
             ? `HIGH DELIGHT SIGNAL: ${detail.positioning}. Consumers identify this as a "Holy Grail" format.`
-            : detail.positioning,
+            : hasFrictionSentiment
+              ? `FRICTION SIGNAL: ${detail.positioning}. Consumers report persistent dissatisfaction (friction) that needs a decisive fix.`
+              : detail.positioning,
         ingredients: detail.actives,
         citation: extractSnippet(evidenceMap[painLabel][0] || "Verified consumer friction point."),
         persona: detail.persona,
@@ -634,34 +1189,42 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
         mrpRange: logic.mrpRange,
         isExploratory,
         isLowSignal: score < 3,
-        isDecisionReady: opportunityScore > 8.0,
+        isDecisionReady: baseScore > 8.0,
         evidence: {
           marketplaceHits: score,
           redditBuzz,
           competitionDensity: getCompetitionDensity(proxy),
-          formulaString: `(${score}×1.5) + (${redditBuzz}×2.5) - (${proxy}×10) = ${opportunityScore}`,
+          formulaString: `(${score}×1.5) + (${redditBuzz}×2.5) - (${proxy}×10) = ${baseScore}`,
         },
-        scannerTag,
-        swimlane: targetSwimlane,
+        scannerTag: null,
+        swimlane: "high-signal",
       };
+
+      return applyLevel25StrategicLayer(baseBrief, brand, baseScore);
     });
 
   // 3. LOVE-MARK GAPS from positive scanner
   for (const hit of positiveHits.slice(0, 3)) {
     if (briefs.length >= 12) break;
-    if (hit.format && !briefs.some(b => b.format === hit.format)) {
+    const normalizedHitFormat = hit.format ? normalizeForTokens(hit.format) : null;
+    const portfolioHasFormat = normalizedHitFormat
+      ? (PORTFOLIO_MEMORY[brand] || []).some((p) => p.format === normalizedHitFormat)
+      : false;
+
+    if (hit.format && !briefs.some(b => normalizeForTokens(b.format) === normalizedHitFormat) && !portfolioHasFormat) {
       const proxy = 0.3;
       const redditBuzz = 15;
-      const opportunityScore = calcOpportunityScore(5, redditBuzz * LOVEMARK_REDDIT_BOOST, proxy, true);
+      const baseScore = calcOpportunityScore(5, redditBuzz * LOVEMARK_REDDIT_BOOST, proxy, true);
+      const seedActives = getTopPortfolioActives(brand, 4);
 
-      briefs.push({
+      const baseBrief: ProductBrief = {
         conceptName: `${hit.format} Innovation`,
         dynamicName: `Love-Mark ${hit.format}`,
         whiteSpace: `Consumer delight for ${hit.format} format`,
         signalStrength: 5,
-        opportunityScore,
+        opportunityScore: baseScore,
         noveltyRationale: `Consumers expressing delight ('holy grail', 'game changer') for ${hit.format} format not in our portfolio.`,
-        ingredients: ["TBD — R&D Required"],
+        ingredients: seedActives.length > 0 ? seedActives : ["TBD — R&D Required"],
         citation: extractSnippet(hit.text),
         persona: "Format-seeking consumers delighted by competitor innovation.",
         positioning: `Steal & improve the ${hit.format} format loved by competitors' customers.`,
@@ -674,11 +1237,13 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
           marketplaceHits: 5,
           redditBuzz,
           competitionDensity: "Low",
-          formulaString: `(5×1.5) + (${(redditBuzz * LOVEMARK_REDDIT_BOOST).toFixed(0)}×2.5) - (${proxy}×10) = ${opportunityScore}`,
+          formulaString: `(5×1.5) + (${(redditBuzz * LOVEMARK_REDDIT_BOOST).toFixed(0)}×2.5) - (${proxy}×10) = ${baseScore}`,
         },
-        scannerTag: "love-mark-gap",
-        swimlane: "competitor-lovemark",
-      });
+        scannerTag: null,
+        swimlane: "high-signal",
+      };
+
+      briefs.push(applyLevel25StrategicLayer(baseBrief, brand, baseScore));
     }
   }
 
@@ -691,15 +1256,13 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
       if (briefs.length >= 12) break;
       if (used.has(label)) continue;
 
-      const proxy = getCompetitionProxy(brand, detail.subSector);
-      const scannerTag: ScannerTag = null;
-
-      briefs.push({
+      const baseScore = 1.5; // existing behavior for thin datasets
+      const baseBrief: ProductBrief = {
         conceptName: detail.concept,
         dynamicName: `Trend: ${detail.concept}`,
         whiteSpace: label,
         signalStrength: 0,
-        opportunityScore: 1.5,
+        opportunityScore: baseScore,
         noveltyRationale: detail.positioning,
         ingredients: detail.actives,
         citation: "Predictive Intelligence: Emerging trend in r/IndianSkincareAddicts.",
@@ -711,9 +1274,11 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
         isLowSignal: true,
         isDecisionReady: false,
         evidence: { marketplaceHits: 0, redditBuzz: 12, competitionDensity: "Medium", formulaString: "Social Trend only" },
-        scannerTag,
         swimlane: "high-signal",
-      });
+        scannerTag: null,
+      };
+
+      briefs.push(applyLevel25StrategicLayer(baseBrief, brand, baseScore));
     }
   }
 
