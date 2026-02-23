@@ -3,7 +3,7 @@ import { BrandName, AnalysisResult, runAnalysis, generateExecutiveSummary, gener
 import BrandSelector from "@/components/BrandSelector";
 import CsvUploader from "@/components/CsvUploader";
 import BriefCard from "@/components/BriefCard";
-import { Rocket, AlertTriangle, Sparkles, Database, ScanSearch, Zap, Download, Shield, Leaf, Star } from "lucide-react";
+import { Rocket, AlertTriangle, Sparkles, Database, ScanSearch, Zap, Download, Shield, BarChart3, Star, FileCheck } from "lucide-react";
 
 export default function Index() {
   const [selectedBrand, setSelectedBrand] = useState<BrandName | null>(null);
@@ -52,7 +52,7 @@ export default function Index() {
           </div>
           <div>
             <h1 className="font-display text-lg font-bold text-foreground leading-none">Mosaic Wellness</h1>
-            <p className="text-xs text-muted-foreground">NPD Dynamic Discovery Engine · 2026</p>
+            <p className="text-xs text-muted-foreground">NPD Decision Engine · Audit Grade · 2026</p>
           </div>
         </div>
       </header>
@@ -82,7 +82,7 @@ export default function Index() {
             }`}
           >
             <Rocket className={`w-5 h-5 ${isAnalyzing ? "animate-bounce" : ""}`} />
-            {isAnalyzing ? "Analyzing…" : "Generate Innovation Pipeline"}
+            {isAnalyzing ? "Analyzing…" : "Generate Decision Pipeline"}
           </button>
         </section>
 
@@ -104,7 +104,7 @@ export default function Index() {
                 <div className="rounded-xl border border-border bg-card/80 backdrop-blur-md p-5">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <StatPill icon={Database} label="Datasets Analyzed" value={result.stats.datasetsAnalyzed} />
-                    <StatPill icon={ScanSearch} label="Consumer Touchpoints" value={result.stats.totalRows.toLocaleString()} />
+                    <StatPill icon={ScanSearch} label="Rows Scanned" value={result.stats.totalRows.toLocaleString()} />
                     <StatPill icon={Zap} label="High-Intensity Gaps" value={result.stats.highIntensityGaps} />
                   </div>
                 </div>
@@ -112,11 +112,13 @@ export default function Index() {
                 {/* Pipeline header + download */}
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="font-display text-xl font-bold text-foreground">Innovation Pipeline</h2>
+                    <h2 className="font-display text-xl font-bold text-foreground">Decision Pipeline</h2>
                     <p className="text-sm text-muted-foreground">
                       {result.briefs.length} concepts for {result.brand} · Source: {csvName}
-                      {result.briefs.some((b) => b.isExploratory) && (
-                        <span className="ml-2 text-xs bg-muted px-2 py-0.5 rounded-full">Includes Exploratory</span>
+                      {result.briefs.some((b) => b.isLowSignal) && (
+                        <span className="ml-2 text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                          Includes Low Signal
+                        </span>
                       )}
                     </p>
                   </div>
@@ -136,7 +138,7 @@ export default function Index() {
                   ))}
                 </div>
 
-                {/* Executive Summary */}
+                {/* Executive Summary (Audit Grade) */}
                 <ExecutiveSummary result={result} />
               </>
             )}
@@ -184,19 +186,24 @@ function ExecutiveSummary({ result }: { result: AnalysisResult }) {
     <div className="rounded-2xl border border-border bg-card/80 backdrop-blur-md p-8 space-y-6">
       <h2 className="font-display text-xl font-bold text-foreground flex items-center gap-2">
         <Star className="w-5 h-5 text-brand-lj" />
-        Strategic Executive Summary
+        Strategic Executive Summary (Audit Grade)
       </h2>
 
       <div className="space-y-5">
         <SummaryBlock
-          icon={Shield}
-          title="Format Compliance & Indian Environment"
-          text={summary.formatRationale}
+          icon={FileCheck}
+          title="Data Integrity"
+          text={summary.dataIntegrity}
         />
         <SummaryBlock
-          icon={Leaf}
-          title="Health-First Mission Alignment"
-          text={summary.missionAlignment}
+          icon={BarChart3}
+          title="Opportunity Score Logic"
+          text={summary.opportunityLogic}
+        />
+        <SummaryBlock
+          icon={Shield}
+          title="Format Compliance"
+          text={summary.formatCompliance}
         />
         <div>
           <div className="flex items-center gap-2 mb-2">
