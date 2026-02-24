@@ -1,4 +1,4 @@
-import { ProductBrief, BrandName } from "@/lib/npd-engine";
+import { Brief, BrandName } from "@/lib/npd-engine";
 import { FlaskConical, Quote, Target, User, Tag, TrendingUp, Swords, Beaker, CheckCircle, AlertTriangle } from "lucide-react";
 
 const brandGlassMap: Record<BrandName, string> = {
@@ -20,7 +20,7 @@ const brandBadgeMap: Record<BrandName, string> = {
 };
 
 interface BriefCardProps {
-  brief: ProductBrief;
+  brief: Brief;
   brand: BrandName;
   index: number;
 }
@@ -56,7 +56,7 @@ export default function BriefCard({ brief, brand, index }: BriefCardProps) {
         <div className="flex flex-col items-end gap-1.5 shrink-0">
           <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${brief.isDecisionReady ? "bg-emerald-500 text-white" : brandBadgeMap[brand]}`}>
             <TrendingUp className="inline w-3 h-3 mr-1 -mt-0.5" />
-            {brief.opportunityScore}/10
+            {brief.score}/10
           </span>
         </div>
       </div>
@@ -64,7 +64,7 @@ export default function BriefCard({ brief, brand, index }: BriefCardProps) {
       <div className="space-y-3.5">
         {/* Target Consumer */}
         <Row icon={User} label="Target Consumer" accentClass={brandAccentMap[brand]}>
-          <p className="text-sm text-foreground/85">{brief.persona}</p>
+          <p className="text-sm text-foreground/85">{brief.targetConsumer}</p>
         </Row>
 
         {/* White Space */}
@@ -75,7 +75,7 @@ export default function BriefCard({ brief, brand, index }: BriefCardProps) {
         {/* Format & Formulation */}
         <Row icon={Beaker} label="Format & Formulation" accentClass={brandAccentMap[brand]}>
           <p className="text-sm text-foreground/85">
-            <span className="font-semibold">{brief.format}</span> — {brief.ingredients.join(", ")}
+            <span className="font-semibold">{brief.formatFormulation}</span> — {brief.ingredients.join(", ")}
           </p>
         </Row>
 
@@ -115,22 +115,22 @@ export default function BriefCard({ brief, brand, index }: BriefCardProps) {
         <div className="grid grid-cols-3 gap-3">
           <div>
             <p className="text-[10px] text-muted-foreground">Marketplace Hits</p>
-            <p className="font-display font-bold text-sm text-foreground">{brief.evidence.marketplaceHits} Rows</p>
+            <p className="font-display font-bold text-sm text-foreground">{brief.auditTrail.marketplaceHits} Rows</p>
           </div>
           <div>
             <p className="text-[10px] text-muted-foreground">Reddit Buzz</p>
-            <p className="font-display font-bold text-sm text-foreground">{brief.evidence.redditBuzz} Mentions</p>
+            <p className="font-display font-bold text-sm text-foreground">{brief.auditTrail.redditBuzz} Mentions</p>
           </div>
           <div>
             <p className="text-[10px] text-muted-foreground">Competition</p>
             <p className={`font-display font-bold text-sm ${
-              brief.evidence.competitionDensity === "High" ? "text-destructive" :
-              brief.evidence.competitionDensity === "Medium" ? "text-brand-lj" : "text-emerald-600"
-            }`}>{brief.evidence.competitionDensity}</p>
+              brief.auditTrail.competitionDensity === "High" ? "text-destructive" :
+              brief.auditTrail.competitionDensity === "Medium" ? "text-brand-lj" : "text-emerald-600"
+            }`}>{brief.auditTrail.competitionDensity}</p>
           </div>
         </div>
         <div className="mt-2 pt-2 border-t border-border/50">
-          <p className="text-[10px] font-mono text-muted-foreground">Formula: {brief.evidence.formulaString}</p>
+          <p className="text-[10px] font-mono text-muted-foreground">Formula: {brief.auditTrail.formulaString}</p>
         </div>
       </div>
 

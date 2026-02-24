@@ -529,7 +529,7 @@ export const COMPETITION_PROXIES: Record<string, Record<string, number>> = {
 // - Format Match (20%)
 // - Persona Alignment (20%)
 // - Claim Match (20%)
-export function calculateStrategicFit(proposed: ProductBrief, brand: BrandName): StrategicFitResult {
+export function calculateStrategicFit(proposed: Brief, brand: BrandName): StrategicFitResult {
   const portfolio = PORTFOLIO_MEMORY[brand] || [];
   if (!portfolio.length) {
     return { totalSimilarity: 0, ingredientOverlap: 0, formatMatch: 0, personaAlignment: 0, claimMatch: 0 };
@@ -600,7 +600,7 @@ function getTopPortfolioActives(brand: BrandName, limit: number): string[] {
     .map(([active]) => active);
 }
 
-function applyLevel25StrategicLayer(brief: ProductBrief, brand: BrandName, baseScore: number): ProductBrief {
+function applyLevel25StrategicLayer(brief: Brief, brand: BrandName, baseScore: number): Brief {
   const strategicFit = calculateStrategicFit({ ...brief, opportunityScore: baseScore }, brand);
 
   let multiplier = 1;
@@ -639,11 +639,16 @@ function applyLevel25StrategicLayer(brief: ProductBrief, brand: BrandName, baseS
   return {
     ...brief,
     opportunityScore: finalOpportunityScore,
+    score: finalOpportunityScore,
     isDecisionReady: finalOpportunityScore > 8.0,
     noveltyRationale: `${brief.noveltyRationale} | ${reason}`,
     scannerTag: tag,
     swimlane: lane,
     evidence: {
+      ...brief.evidence,
+      formulaString: `${brief.evidence.formulaString} | Level 2.5 ×${multiplier} => ${finalOpportunityScore}`,
+    },
+    auditTrail: {
       ...brief.evidence,
       formulaString: `${brief.evidence.formulaString} | Level 2.5 ×${multiplier} => ${finalOpportunityScore}`,
     },
@@ -657,30 +662,39 @@ export interface EvidencePanel {
   formulaString: string;
 }
 
-export interface ProductBrief {
+// UI-facing Brief shape (Emergent-style naming)
+export interface Brief {
   conceptName: string;
   dynamicName: string;
   whiteSpace: string;
   signalStrength: number;
   opportunityScore: number;
+  // Aliased fields for UI
+  score: number;
   noveltyRationale: string;
   ingredients: string[];
   citation: string;
   persona: string;
+  targetConsumer: string;
   positioning: string;
   format: string;
+  formatFormulation: string;
   mrpRange: string;
   isExploratory: boolean;
   isLowSignal: boolean;
   isDecisionReady: boolean;
   evidence: EvidencePanel;
+  auditTrail: EvidencePanel;
   scannerTag: ScannerTag;
   swimlane: Swimlane;
 }
 
+// Backwards-compat alias used elsewhere in the engine
+export type ProductBrief = Brief;
+
 export interface AnalysisResult {
   brand: BrandName;
-  briefs: ProductBrief[];
+  briefs: Brief[];
   noData: boolean;
   stats: {
     totalRows: number;
@@ -1218,7 +1232,7 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
   }
 
   // 2. CONVERSION: one brief per composite key (Active + Category + Brand) + CSV enrichment
-  let briefs: ProductBrief[] = [];
+  let briefs: Brief[] = [];
 
   if (hitGroups.size > 0) {
     const sorted = [...hitGroups.entries()].sort(([, a], [, b]) => b.impactSum - a.impactSum);
@@ -1248,12 +1262,13 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
         positioning = `${positioning} Competitive context: ${csvContext}.`;
       }
 
-      const baseBrief: ProductBrief = {
+      const baseBrief: Brief = {
         conceptName: detail.concept,
         dynamicName: buildDynamicName(matchedKeyword, brand, detail.format),
         whiteSpace: painLabel,
         signalStrength: score,
         opportunityScore: baseScore,
+        score: baseScore,
         noveltyRationale: hasLoveMarkSentiment
             ? `HIGH DELIGHT SIGNAL: ${detail.positioning}. Consumers identify this as a "Holy Grail" format.`
             : hasFrictionSentiment
@@ -1262,13 +1277,21 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
         ingredients: detail.actives,
         citation: extractSnippet(evidence[0] || "Verified consumer friction point."),
         persona,
+        targetConsumer: persona,
         positioning,
         format: detail.format,
+        formatFormulation: detail.format,
         mrpRange: logic.mrpRange,
         isExploratory,
         isLowSignal: score < 3,
         isDecisionReady: baseScore > 8.0,
         evidence: {
+          marketplaceHits: score,
+          redditBuzz,
+          competitionDensity: getCompetitionDensity(proxy),
+          formulaString: `(${score}×1.5) + (${redditBuzz}×2.5) - (${proxy}×10) = ${baseScore}`,
+        },
+        auditTrail: {
           marketplaceHits: score,
           redditBuzz,
           competitionDensity: getCompetitionDensity(proxy),
@@ -1310,23 +1333,32 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
     for (let i = 0; i < Math.min(aggregated.length, 12); i++) {
       const { content, impact } = aggregated[i];
       const baseScore = calcOpportunityScore(impact, Math.floor(impact * 0.25), proxy, false);
-      const baseBrief: ProductBrief = {
+      const baseBrief: Brief = {
         conceptName: content,
         dynamicName: `Draft: ${content.slice(0, 40)}${content.length > 40 ? "…" : ""}`,
         whiteSpace: content,
         signalStrength: impact,
         opportunityScore: baseScore,
+        score: baseScore,
         noveltyRationale: `Draft from your CSV. No pain-point keyword match; showing raw topic with intensity ${impact}. Map to a formal concept in BRAND_LOGIC to get full strategic scoring.`,
         ingredients: [],
         citation: extractSnippet(content),
         persona: "Audience TBD — refine from CSV or BRAND_LOGIC.",
+        targetConsumer: "Audience TBD — refine from CSV or BRAND_LOGIC.",
         positioning: "Draft concept; validate and assign format/actives for full pipeline.",
         format: defaultFormat,
+        formatFormulation: defaultFormat,
         mrpRange: logic.mrpRange,
         isExploratory: true,
         isLowSignal: impact < 3,
         isDecisionReady: false,
         evidence: {
+          marketplaceHits: impact,
+          redditBuzz: Math.floor(impact * 0.25),
+          competitionDensity: getCompetitionDensity(proxy),
+          formulaString: `Draft (CSV raw): intensity ${impact} => base score ${baseScore}`,
+        },
+        auditTrail: {
           marketplaceHits: impact,
           redditBuzz: Math.floor(impact * 0.25),
           competitionDensity: getCompetitionDensity(proxy),
@@ -1350,23 +1382,32 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
     const redditBuzz = Math.min(15, Math.floor(cand.impact * 0.5));
     const baseScore = calcOpportunityScore(cand.impact, redditBuzz * LOVEMARK_REDDIT_BOOST, proxy, true);
     const seedActives = getTopPortfolioActives(brand, 4);
-    const baseBrief: ProductBrief = {
+    const baseBrief: Brief = {
       conceptName: `${cand.format} (Competitor: ${cand.csvBrand})`,
       dynamicName: `Love-Mark ${cand.format} — ${cand.csvBrand}`,
       whiteSpace: `Competitor ${cand.csvBrand} high demand (${cand.impact}); format not in our portfolio.`,
       signalStrength: cand.impact,
       opportunityScore: baseScore,
+      score: baseScore,
       noveltyRationale: `High quantity/upvotes for non-Mosaic brand "${cand.csvBrand}" with ${cand.format} format we don't offer. Love-Mark gap.`,
       ingredients: seedActives.length > 0 ? seedActives : ["TBD — R&D Required"],
       citation: extractSnippet(cand.text),
       persona: `Consumers buying ${cand.format} from competitor ${cand.csvBrand}.`,
+      targetConsumer: `Consumers buying ${cand.format} from competitor ${cand.csvBrand}.`,
       positioning: `Steal & improve the ${cand.format} format; competitor ${cand.csvBrand} is winning here.`,
       format: cand.format,
+      formatFormulation: cand.format,
       mrpRange: logic.mrpRange,
       isExploratory: true,
       isLowSignal: false,
       isDecisionReady: baseScore > 8.0,
       evidence: {
+        marketplaceHits: cand.impact,
+        redditBuzz,
+        competitionDensity: "Low",
+        formulaString: `Competitor love-mark: ${cand.impact} demand, format ${cand.format} => ${baseScore}`,
+      },
+      auditTrail: {
         marketplaceHits: cand.impact,
         redditBuzz,
         competitionDensity: "Low",
@@ -1392,23 +1433,32 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
       const baseScore = calcOpportunityScore(5, redditBuzz * LOVEMARK_REDDIT_BOOST, proxy, true);
       const seedActives = getTopPortfolioActives(brand, 4);
 
-      const baseBrief: ProductBrief = {
+      const baseBrief: Brief = {
         conceptName: `${hit.format} Innovation`,
         dynamicName: `Love-Mark ${hit.format}`,
         whiteSpace: `Consumer delight for ${hit.format} format`,
         signalStrength: 5,
         opportunityScore: baseScore,
+        score: baseScore,
         noveltyRationale: `Consumers expressing delight ('holy grail', 'game changer') for ${hit.format} format not in our portfolio.`,
         ingredients: seedActives.length > 0 ? seedActives : ["TBD — R&D Required"],
         citation: extractSnippet(hit.text),
         persona: "Format-seeking consumers delighted by competitor innovation.",
+        targetConsumer: "Format-seeking consumers delighted by competitor innovation.",
         positioning: `Steal & improve the ${hit.format} format loved by competitors' customers.`,
         format: hit.format,
+        formatFormulation: hit.format,
         mrpRange: logic.mrpRange,
         isExploratory: true,
         isLowSignal: false,
         isDecisionReady: false,
         evidence: {
+          marketplaceHits: 5,
+          redditBuzz,
+          competitionDensity: "Low",
+          formulaString: `(5×1.5) + (${(redditBuzz * LOVEMARK_REDDIT_BOOST).toFixed(0)}×2.5) - (${proxy}×10) = ${baseScore}`,
+        },
+        auditTrail: {
           marketplaceHits: 5,
           redditBuzz,
           competitionDensity: "Low",
@@ -1432,23 +1482,27 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
       if (used.has(label)) continue;
 
       const baseScore = 1.5; // existing behavior for thin datasets
-      const baseBrief: ProductBrief = {
+      const baseBrief: Brief = {
         conceptName: detail.concept,
         dynamicName: `Trend: ${detail.concept}`,
         whiteSpace: label,
         signalStrength: 0,
         opportunityScore: baseScore,
+        score: baseScore,
         noveltyRationale: detail.positioning,
         ingredients: detail.actives,
         citation: "Predictive Intelligence: Emerging trend in r/IndianSkincareAddicts.",
         persona: detail.persona,
+        targetConsumer: detail.persona,
         positioning: detail.positioning,
         format: detail.format,
+        formatFormulation: detail.format,
         mrpRange: logic.mrpRange,
         isExploratory: true,
         isLowSignal: true,
         isDecisionReady: false,
         evidence: { marketplaceHits: 0, redditBuzz: 12, competitionDensity: "Medium", formulaString: "Social Trend only" },
+        auditTrail: { marketplaceHits: 0, redditBuzz: 12, competitionDensity: "Medium", formulaString: "Social Trend only" },
         swimlane: "high-signal",
         scannerTag: null,
       };
@@ -1484,13 +1538,13 @@ export function generateExecutiveSummary(result: AnalysisResult): {
 } {
   const dataBackedCount = result.briefs.filter((b) => !b.isLowSignal).length;
   const lowSignalCount = result.briefs.filter((b) => b.isLowSignal).length;
-  const formats = [...new Set(result.briefs.map((b) => b.format))];
+  const formats = [...new Set(result.briefs.map((b) => b.formatFormulation))];
   const portfolioOptCount = result.briefs.filter(b => b.scannerTag === "portfolio-optimization").length;
   const loveMarkCount = result.briefs.filter(b => b.scannerTag === "love-mark-gap").length;
 
   const topBriefs = result.briefs
     .filter((b) => !b.isLowSignal)
-    .sort((a, b) => b.opportunityScore - a.opportunityScore)
+    .sort((a, b) => b.score - a.score)
     .slice(0, 3);
 
   return {
@@ -1499,8 +1553,8 @@ export function generateExecutiveSummary(result: AnalysisResult): {
     formatCompliance: `All concepts prioritize modern formats (${formats.join(", ")}) selected to solve for Indian User Compliance — Heat, Humidity, and Sugar-aversion.`,
     marketAwareness: `Mosaic 360° Scanner identified ${loveMarkCount} "Love-Mark" gaps (High Competitor Delight) and ${portfolioOptCount} Portfolio V2 opportunities based on ${result.stats.negativeSignals} unique friction points.`,
     highPriority: topBriefs.length > 0
-      ? topBriefs.map((b) => `${b.dynamicName} (Score: ${b.opportunityScore})`)
-      : result.briefs.slice(0, 2).map((b) => `${b.dynamicName} (Score: ${b.opportunityScore})`),
+      ? topBriefs.map((b) => `${b.dynamicName} (Score: ${b.score})`)
+      : result.briefs.slice(0, 2).map((b) => `${b.dynamicName} (Score: ${b.score})`),
   };
 }
 
@@ -1516,7 +1570,7 @@ export function generateMarkdownReport(result: AnalysisResult): string {
     "", "---", "",
   ];
 
-  const swimlanes: Record<Swimlane, ProductBrief[]> = {
+  const swimlanes: Record<Swimlane, Brief[]> = {
     "competitor-lovemark": result.briefs.filter(b => b.swimlane === "competitor-lovemark"),
     "high-signal": result.briefs.filter(b => b.swimlane === "high-signal"),
     "v2-optimization": result.briefs.filter(b => b.swimlane === "v2-optimization"),
@@ -1549,15 +1603,15 @@ export function generateMarkdownReport(result: AnalysisResult): string {
         `|-------|--------|`,
         `| **White Space** | ${brief.whiteSpace} |`,
         `| **Sentiment Signal** | ${brief.scannerTag === "love-mark-gap" ? "🚀 HIGH DELIGHT (Love-Mark)" : brief.scannerTag === "portfolio-optimization" ? "⚠️ FRICTION (V2 Fix)" : "🔍 Neutral Gap"} |`,
-        `| **Target Consumer** | ${brief.persona} |`,
-        `| **Format** | ${brief.format} |`,
+        `| **Target Consumer** | ${brief.targetConsumer} |`,
+        `| **Format** | ${brief.formatFormulation} |`,
         `| **Active Ingredients** | ${brief.ingredients.join(", ")} |`,
         `| **Suggested MRP** | ${brief.mrpRange} |`,
-        `| **Opportunity Score** | ${brief.opportunityScore}/10 |`,
-        `| **Marketplace Hits** | ${brief.evidence.marketplaceHits} rows |`,
-        `| **Reddit Buzz** | ${brief.evidence.redditBuzz} mentions |`,
-        `| **Competition Density** | ${brief.evidence.competitionDensity} |`,
-        `| **Formula** | ${brief.evidence.formulaString} |`,
+        `| **Opportunity Score** | ${brief.score}/10 |`,
+        `| **Marketplace Hits** | ${brief.auditTrail.marketplaceHits} rows |`,
+        `| **Reddit Buzz** | ${brief.auditTrail.redditBuzz} mentions |`,
+        `| **Competition Density** | ${brief.auditTrail.competitionDensity} |`,
+        `| **Formula** | ${brief.auditTrail.formulaString} |`,
         "",
         `**Competitive Positioning:** ${brief.positioning}`,
         "",
