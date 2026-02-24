@@ -115,11 +115,6 @@ export default function Index() {
                     <h2 className="font-display text-xl font-bold text-foreground">Decision Pipeline</h2>
                     <p className="text-sm text-muted-foreground">
                       {result.briefs.length} concepts for {result.brand} · Source: {csvName}
-                      {result.briefs.some((b) => b.isLowSignal) && (
-                        <span className="ml-2 text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
-                          Includes Low Signal
-                        </span>
-                      )}
                     </p>
                   </div>
                   <button
@@ -131,12 +126,8 @@ export default function Index() {
                   </button>
                 </div>
 
-                {/* Brief Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {result.briefs.map((brief, i) => (
-                    <BriefCard key={brief.conceptName + i} brief={brief} brand={result.brand} index={i} />
-                  ))}
-                </div>
+                {/* Strategic Lanes: 3 sections + Audit Low Priority */}
+                <StrategicLanes result={result} csvName={csvName} />
 
                 {/* Executive Summary (Audit Grade) */}
                 <ExecutiveSummary result={result} />
@@ -150,6 +141,81 @@ export default function Index() {
 }
 
 /* --- Sub-components --- */
+
+const LANE_CONFIG: Array<{
+  key: "high-signal" | "competitor-lovemark" | "v2-optimization";
+  title: string;
+  subtitle: string;
+}> = [
+  {
+    key: "high-signal",
+    title: "🚀 High-Signal Innovation",
+    subtitle: "White space with no portfolio overlap; blue-ocean opportunities.",
+  },
+  {
+    key: "competitor-lovemark",
+    title: "🎯 Competitor Love-Mark Gaps",
+    subtitle: "Formats or products competitors do well; we have the science but not the format.",
+  },
+  {
+    key: "v2-optimization",
+    title: "🔧 Portfolio V2 Optimization",
+    subtitle: "High overlap with current portfolio; fix friction via V2 of existing SKU.",
+  },
+];
+
+function StrategicLanes({ result, csvName }: { result: AnalysisResult; csvName: string }) {
+  const allBriefs = result.briefs;
+  const lowPriority = allBriefs.filter((b) => b.isLowSignal);
+  const decisionBriefs = allBriefs.filter((b) => !b.isLowSignal);
+
+  return (
+    <div className="space-y-10">
+      {LANE_CONFIG.map(({ key, title, subtitle }) => {
+        const laneBriefs = decisionBriefs.filter((b) => b.swimlane === key);
+        return (
+          <section key={key} className="space-y-3">
+            <div>
+              <h3 className="font-display text-lg font-bold text-foreground">{title}</h3>
+              <p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>
+            </div>
+            {laneBriefs.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center">
+                <p className="text-sm text-muted-foreground">No Gaps Identified</p>
+                <p className="text-xs text-muted-foreground mt-1">No concepts in this lane for the current CSV.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {laneBriefs.map((brief, i) => (
+                  <BriefCard key={brief.conceptName + brief.dynamicName + i} brief={brief} brand={result.brand} index={i} />
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      })}
+
+      {/* Audit: Low Priority — separate section at bottom */}
+      <section className="space-y-3 pt-4 border-t border-border">
+        <div>
+          <h3 className="font-display text-lg font-bold text-foreground">Audit: Low Priority</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">Low-signal or exploratory concepts; validate before R&D.</p>
+        </div>
+        {lowPriority.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border bg-muted/30 p-6 text-center">
+            <p className="text-sm text-muted-foreground">No low-priority items</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {lowPriority.map((brief, i) => (
+              <BriefCard key={brief.conceptName + brief.dynamicName + "low" + i} brief={brief} brand={result.brand} index={i} />
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
 
 function StepHeader({ number, title, subtitle }: { number: number; title: string; subtitle: string }) {
   return (
