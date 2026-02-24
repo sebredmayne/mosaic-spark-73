@@ -6,6 +6,27 @@ export type BrandName = "Man Matters" | "Be Bodywise" | "Little Joys";
 export type ScannerTag = "portfolio-optimization" | "love-mark-gap" | "innovation" | null;
 export type Swimlane = "high-signal" | "competitor-lovemark" | "v2-optimization";
 
+export interface Brief {
+  conceptName: string;
+  dynamicName: string;
+  score: number;
+  targetConsumer: string;
+  whiteSpace: string;
+  formatFormulation: string;
+  suggestedMRP: string;
+  competitivePositioning: string;
+  consumerEvidence: string;
+  activeIngredients: string[];
+  isLowSignal: boolean;
+  swimlane: Swimlane; 
+  auditTrail: {
+    marketplaceHits: number;
+    redditBuzz: number;
+    competition: string;
+    formula: string;
+  };
+}
+
 export interface PainDetail {
   keywords: string[];
   concept: string;
@@ -23,7 +44,6 @@ export interface BrandLogic {
   pains: Record<string, PainDetail>;
   exploratoryPains: Record<string, PainDetail>;
 }
-
 // PORTFOLIO GUARDRAILS — existing products per brand
 export const PORTFOLIO_GUARDRAILS: Record<BrandName, string[]> = {
   "Man Matters": [
@@ -1262,41 +1282,29 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
         positioning = `${positioning} Competitive context: ${csvContext}.`;
       }
 
-      const baseBrief: Brief = {
+     const baseBrief: Brief = { // Change ProductBrief to Brief
         conceptName: detail.concept,
         dynamicName: buildDynamicName(matchedKeyword, brand, detail.format),
+        score: baseScore, // UI expects 'score'
+        targetConsumer: persona, // UI expects 'targetConsumer'
         whiteSpace: painLabel,
-        signalStrength: score,
-        opportunityScore: baseScore,
-        score: baseScore,
-        noveltyRationale: hasLoveMarkSentiment
-            ? `HIGH DELIGHT SIGNAL: ${detail.positioning}. Consumers identify this as a "Holy Grail" format.`
-            : hasFrictionSentiment
-              ? `FRICTION SIGNAL: ${detail.positioning}. Consumers report persistent dissatisfaction (friction) that needs a decisive fix.`
-              : detail.positioning,
-        ingredients: detail.actives,
-        citation: extractSnippet(evidence[0] || "Verified consumer friction point."),
-        persona,
-        targetConsumer: persona,
-        positioning,
-        format: detail.format,
-        formatFormulation: detail.format,
-        mrpRange: logic.mrpRange,
-        isExploratory,
+        formatFormulation: detail.format, // UI expects 'formatFormulation'
+        suggestedMRP: logic.mrpRange,
+        competitivePositioning: positioning,
+        consumerEvidence: extractSnippet(evidence[0] || "Verified consumer friction point."),
+        activeIngredients: detail.actives,
         isLowSignal: score < 3,
-        isDecisionReady: baseScore > 8.0,
-        evidence: {
+        // Strategic Logic for Swimlane
+        swimlane: hasLoveMarkSentiment 
+          ? "competitor-lovemark" 
+          : (hasFrictionSentiment ? "v2-optimization" : "high-signal"),
+        auditTrail: { // Map 'evidence' fields to 'auditTrail'
           marketplaceHits: score,
-          redditBuzz,
-          competitionDensity: getCompetitionDensity(proxy),
-          formulaString: `(${score}×1.5) + (${redditBuzz}×2.5) - (${proxy}×10) = ${baseScore}`,
+          redditBuzz: redditBuzz,
+          competition: getCompetitionDensity(proxy),
+          formula: `(${score}×1.5) + (${redditBuzz}×2.5) - (${proxy}×10) = ${baseScore}`,
         },
-        auditTrail: {
-          marketplaceHits: score,
-          redditBuzz,
-          competitionDensity: getCompetitionDensity(proxy),
-          formulaString: `(${score}×1.5) + (${redditBuzz}×2.5) - (${proxy}×10) = ${baseScore}`,
-        },
+      };
         scannerTag: null,
         swimlane: "high-signal",
       };
