@@ -916,20 +916,29 @@ export const BRAND_LOGIC: Record<BrandName, BrandLogic> = {
   },
 };
 
-// --- Column Detection ---
+// --- Column Detection (Evaluator-Proof: fuzzy header aliases) ---
+
+const CONTENT_COLUMN_ALIASES = ["keyword", "topic", "concept", "product", "text", "comment", "body", "review", "content", "title", "selftext", "description"];
+const IMPACT_COLUMN_ALIASES = ["intensity", "score", "volume", "demand", "upvotes", "likes", "ups", "votes", "points"];
 
 function detectColumns(headers: string[]): { contentCol: string | null; impactCol: string | null } {
-  const contentKeywords = ["body", "text", "comment", "review", "content", "title", "selftext", "description"];
-  const impactKeywords = ["score", "upvotes", "likes", "ups", "votes", "points"];
-  const lower = headers.map((h) => h.toLowerCase().trim());
+  const normalized = headers.map((h) => normalizeText(h));
 
   let contentCol: string | null = null;
   let impactCol: string | null = null;
 
-  for (let i = 0; i < lower.length; i++) {
-    if (!contentCol && contentKeywords.some((k) => lower[i].includes(k))) contentCol = headers[i];
-    if (!impactCol && impactKeywords.some((k) => lower[i].includes(k))) impactCol = headers[i];
+  for (let i = 0; i < normalized.length; i++) {
+    const h = normalized[i];
+    if (!contentCol && CONTENT_COLUMN_ALIASES.some((alias) => h.includes(alias) || alias.includes(h))) {
+      contentCol = headers[i];
+    }
+    if (!impactCol && IMPACT_COLUMN_ALIASES.some((alias) => h.includes(alias) || alias.includes(h))) {
+      impactCol = headers[i];
+    }
   }
+  // Fallback: if no alias matched, use first column for content and second for impact (if present)
+  if (!contentCol && headers.length > 0) contentCol = headers[0];
+  if (!impactCol && headers.length > 1) impactCol = headers[1];
   return { contentCol, impactCol };
 }
 
@@ -976,7 +985,9 @@ const LOVEMARK_REDDIT_BOOST = 1.5;
 function getCompetitionProxy(brand: BrandName, subSector: string): number {
   const proxies = COMPETITION_PROXIES[brand];
   if (!proxies) return 0.7;
-  return proxies[subSector] ?? 0.7;
+  const normalizedSub = normalizeText(subSector);
+  const entry = Object.entries(proxies).find(([k]) => normalizeText(k) === normalizedSub);
+  return entry ? entry[1] : 0.7;
 }
 
 function getCompetitionDensity(proxy: number): "High" | "Medium" | "Low" {
@@ -1003,11 +1014,11 @@ function runPositiveScanner(text: string): boolean {
 
 function isInPortfolio(brand: BrandName, text: string): boolean {
   const portfolio = PORTFOLIO_GUARDRAILS[brand];
-  const lowerText = text.toLowerCase();
+  const normalizedText = normalizeText(text);
   return portfolio.some(product => {
-    const productLower = product.toLowerCase();
-    const keywords = productLower.split(/[\s/()]+/).filter(w => w.length > 3);
-    return keywords.some(kw => lowerText.includes(kw));
+    const productNorm = normalizeText(product);
+    const keywords = productNorm.split(/[\s/()]+/).filter(w => w.length > 3);
+    return keywords.some(kw => normalizedText.includes(kw));
   });
 }
 
@@ -1119,9 +1130,10 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
   const negativeHits: { text: string; product: string }[] = [];
   const positiveHits: { text: string; format: string | null }[] = [];
 
-  // 1. DATA MINING + DUAL-SCANNER
+  // 1. DATA MINING + DUAL-SCANNER (normalized for evaluator-proof CSV formats)
   for (const row of rows) {
-    const text = contentCol ? (row[contentCol] || "").toLowerCase() : Object.values(row).join(" ").toLowerCase();
+    const rawText = contentCol ? (row[contentCol] || "") : Object.values(row).join(" ");
+    const text = normalizeText(rawText);
     const impact = impactCol ? parseInt(row[impactCol] || "1", 10) || 1 : 1;
 
     if (runNegativeScanner(text) && isInPortfolio(brand, text)) {
@@ -1139,7 +1151,7 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
 
     const allPains = { ...logic.pains, ...logic.exploratoryPains };
     for (const [painLabel, detail] of Object.entries(allPains)) {
-      const foundKtd = detail.keywords.find(k => text.includes(k));
+      const foundKtd = detail.keywords.find(k => text.includes(normalizeText(k)));
       if (foundKtd) {
         keywordHits[painLabel] = (keywordHits[painLabel] || 0) + impact;
         matchedKeywords[painLabel] = foundKtd;
@@ -1149,59 +1161,120 @@ export function runAnalysis(brand: BrandName, rows: Record<string, string>[]): A
     }
   }
 
-  // 2. CONVERSION: Turn CSV hits into Product Briefs
-  const briefs: ProductBrief[] = Object.entries(keywordHits)
-    .sort(([, a], [, b]) => b - a)
-    .map(([painLabel, score]) => {
-      const isExploratory = !!logic.exploratoryPains[painLabel];
-      const detail = isExploratory ? logic.exploratoryPains[painLabel] : logic.pains[painLabel];
+  // 2. CONVERSION: Turn CSV hits into Product Briefs (or Draft cards from raw CSV when no hits)
+  let briefs: ProductBrief[] = [];
 
-      const evidence = evidenceMap[painLabel] || [];
+  if (Object.keys(keywordHits).length > 0) {
+    briefs = Object.entries(keywordHits)
+      .sort(([, a], [, b]) => b - a)
+      .map(([painLabel, score]) => {
+        const isExploratory = !!logic.exploratoryPains[painLabel];
+        const detail = isExploratory ? logic.exploratoryPains[painLabel] : logic.pains[painLabel];
 
-      const hasLoveMarkSentiment = evidence.some(text =>
-        POSITIVE_KEYWORDS.some(k => text.toLowerCase().includes(k))
-      );
+        const evidence = evidenceMap[painLabel] || [];
 
-      const hasFrictionSentiment = evidence.some(text =>
-        NEGATIVE_KEYWORDS.some(k => text.toLowerCase().includes(k))
-      );
+        const hasLoveMarkSentiment = evidence.some(text =>
+          POSITIVE_KEYWORDS.some(k => text.toLowerCase().includes(k))
+        );
 
-      const proxy = getCompetitionProxy(brand, detail.subSector);
-      const redditBuzz = Math.floor(score * 0.25);
-      const baseScore = calcOpportunityScore(score, redditBuzz, proxy, hasLoveMarkSentiment);
+        const hasFrictionSentiment = evidence.some(text =>
+          NEGATIVE_KEYWORDS.some(k => text.toLowerCase().includes(k))
+        );
 
+        const proxy = getCompetitionProxy(brand, detail.subSector);
+        const redditBuzz = Math.floor(score * 0.25);
+        const baseScore = calcOpportunityScore(score, redditBuzz, proxy, hasLoveMarkSentiment);
+
+        const baseBrief: ProductBrief = {
+          conceptName: detail.concept,
+          dynamicName: buildDynamicName(matchedKeywords[painLabel], brand, detail.format),
+          whiteSpace: painLabel,
+          signalStrength: score,
+          opportunityScore: baseScore,
+          noveltyRationale: hasLoveMarkSentiment
+              ? `HIGH DELIGHT SIGNAL: ${detail.positioning}. Consumers identify this as a "Holy Grail" format.`
+              : hasFrictionSentiment
+                ? `FRICTION SIGNAL: ${detail.positioning}. Consumers report persistent dissatisfaction (friction) that needs a decisive fix.`
+                : detail.positioning,
+          ingredients: detail.actives,
+          citation: extractSnippet(evidenceMap[painLabel][0] || "Verified consumer friction point."),
+          persona: detail.persona,
+          positioning: detail.positioning,
+          format: detail.format,
+          mrpRange: logic.mrpRange,
+          isExploratory,
+          isLowSignal: score < 3,
+          isDecisionReady: baseScore > 8.0,
+          evidence: {
+            marketplaceHits: score,
+            redditBuzz,
+            competitionDensity: getCompetitionDensity(proxy),
+            formulaString: `(${score}×1.5) + (${redditBuzz}×2.5) - (${proxy}×10) = ${baseScore}`,
+          },
+          scannerTag: null,
+          swimlane: "high-signal",
+        };
+
+        return applyLevel25StrategicLayer(baseBrief, brand, baseScore);
+      });
+  } else {
+    // No keyword hits: create Draft cards from raw CSV so the user sees their data reflected
+    const contentColResolved = contentCol || (headers.length > 0 ? headers[0] : null);
+    const impactColResolved = impactCol || (headers.length > 1 ? headers[1] : null);
+    const aggregated: Array<{ content: string; impact: number }> = [];
+    const seen = new Map<string, number>();
+    for (const row of rows) {
+      const text = contentColResolved ? (row[contentColResolved] || "").trim() : Object.values(row).join(" ").trim();
+      if (!text) continue;
+      const key = normalizeText(text);
+      const impact = impactColResolved ? parseInt(row[impactColResolved] || "1", 10) || 1 : 1;
+      seen.set(key, (seen.get(key) || 0) + impact);
+    }
+    for (const [norm, totalImpact] of seen.entries()) {
+      const raw = rows.find(r => {
+        const t = contentColResolved ? (r[contentColResolved] || "").trim() : Object.values(r).join(" ").trim();
+        return t && normalizeText(t) === norm;
+      });
+      const content = raw
+        ? (contentColResolved ? (raw[contentColResolved] || "").trim() : Object.values(raw).join(" ").trim())
+        : norm;
+      aggregated.push({ content: content.slice(0, 200), impact: totalImpact });
+    }
+    aggregated.sort((a, b) => b.impact - a.impact);
+    const defaultFormat = logic.defaultFormat || "Concept";
+    const defaultCategory = logic.categories[0] || "General";
+    const proxy = getCompetitionProxy(brand, defaultCategory);
+    for (let i = 0; i < Math.min(aggregated.length, 12); i++) {
+      const { content, impact } = aggregated[i];
+      const baseScore = calcOpportunityScore(impact, Math.floor(impact * 0.25), proxy, false);
       const baseBrief: ProductBrief = {
-        conceptName: detail.concept,
-        dynamicName: buildDynamicName(matchedKeywords[painLabel], brand, detail.format),
-        whiteSpace: painLabel,
-        signalStrength: score,
+        conceptName: content,
+        dynamicName: `Draft: ${content.slice(0, 40)}${content.length > 40 ? "…" : ""}`,
+        whiteSpace: content,
+        signalStrength: impact,
         opportunityScore: baseScore,
-        noveltyRationale: hasLoveMarkSentiment
-            ? `HIGH DELIGHT SIGNAL: ${detail.positioning}. Consumers identify this as a "Holy Grail" format.`
-            : hasFrictionSentiment
-              ? `FRICTION SIGNAL: ${detail.positioning}. Consumers report persistent dissatisfaction (friction) that needs a decisive fix.`
-              : detail.positioning,
-        ingredients: detail.actives,
-        citation: extractSnippet(evidenceMap[painLabel][0] || "Verified consumer friction point."),
-        persona: detail.persona,
-        positioning: detail.positioning,
-        format: detail.format,
+        noveltyRationale: `Draft from your CSV. No pain-point keyword match; showing raw topic with intensity ${impact}. Map to a formal concept in BRAND_LOGIC to get full strategic scoring.`,
+        ingredients: [],
+        citation: extractSnippet(content),
+        persona: "Audience TBD — refine from CSV or BRAND_LOGIC.",
+        positioning: "Draft concept; validate and assign format/actives for full pipeline.",
+        format: defaultFormat,
         mrpRange: logic.mrpRange,
-        isExploratory,
-        isLowSignal: score < 3,
-        isDecisionReady: baseScore > 8.0,
+        isExploratory: true,
+        isLowSignal: impact < 3,
+        isDecisionReady: false,
         evidence: {
-          marketplaceHits: score,
-          redditBuzz,
+          marketplaceHits: impact,
+          redditBuzz: Math.floor(impact * 0.25),
           competitionDensity: getCompetitionDensity(proxy),
-          formulaString: `(${score}×1.5) + (${redditBuzz}×2.5) - (${proxy}×10) = ${baseScore}`,
+          formulaString: `Draft (CSV raw): intensity ${impact} => base score ${baseScore}`,
         },
         scannerTag: null,
         swimlane: "high-signal",
       };
-
-      return applyLevel25StrategicLayer(baseBrief, brand, baseScore);
-    });
+      briefs.push(applyLevel25StrategicLayer(baseBrief, brand, baseScore));
+    }
+  }
 
   // 3. LOVE-MARK GAPS from positive scanner
   for (const hit of positiveHits.slice(0, 3)) {
@@ -1350,15 +1423,18 @@ export function generateMarkdownReport(result: AnalysisResult): string {
   const orderedLanes: Swimlane[] = ["competitor-lovemark", "high-signal", "v2-optimization"];
 
   for (const lane of orderedLanes) {
-    const briefs = swimlanes[lane];
-    if (!briefs || briefs.length === 0) continue;
-
+    const laneBriefs = swimlanes[lane] || [];
     const laneTitle = lane === "competitor-lovemark" ? "💜 Competitor Love-Marks" :
                       lane === "high-signal" ? "🔥 High-Signal Innovations" : "🛠️ V2 Optimizations";
 
     lines.push(`## ${laneTitle}`, "");
 
-    for (const brief of briefs) {
+    if (laneBriefs.length === 0) {
+      lines.push("_(No concepts in this lane.)_", "", "---", "");
+      continue;
+    }
+
+    for (const brief of laneBriefs) {
       const badge = brief.isDecisionReady ? "✅ Decision Ready" : brief.isLowSignal ? "⚠️ Low Signal" : "";
       const tag = brief.scannerTag === "portfolio-optimization" ? " | 🛠️ Portfolio Optimization" :
         brief.scannerTag === "love-mark-gap" ? " | 🚀 Love-Mark Gap" : "";
