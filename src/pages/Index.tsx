@@ -46,7 +46,7 @@ export default function Index() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-foreground flex items-center justify-center">
             <Sparkles className="w-5 h-5 text-primary-foreground" />
           </div>
@@ -57,7 +57,7 @@ export default function Index() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-10 space-y-10">
+      <main className="max-w-7xl mx-auto px-6 py-10 space-y-10">
         {/* Step 1 */}
         <section>
           <StepHeader number={1} title="Select Brand Sector" subtitle="Choose the innovation lens for analysis" />
@@ -95,7 +95,6 @@ export default function Index() {
                 <h3 className="font-display text-lg font-bold text-foreground mb-1">No Specific Gaps Found</h3>
                 <p className="text-sm text-muted-foreground max-w-md mx-auto">
                   No specific gaps found for <strong>{result.brand}</strong> in this dataset.
-                  Try uploading data with more consumer reviews, or consider adjacent opportunities.
                 </p>
               </div>
             ) : (
@@ -126,7 +125,7 @@ export default function Index() {
                   </button>
                 </div>
 
-                {/* Strategic Lanes: 3 sections + Audit Low Priority */}
+                {/* Strategic Lanes Sections */}
                 <StrategicLanes result={result} csvName={csvName} />
 
                 {/* Executive Summary (Audit Grade) */}
@@ -142,77 +141,90 @@ export default function Index() {
 
 /* --- Sub-components --- */
 
-const LANE_CONFIG: Array<{
-  key: "high-signal" | "competitor-lovemark" | "v2-optimization";
-  title: string;
-  subtitle: string;
-}> = [
-  {
-    key: "high-signal",
-    title: "🚀 High-Signal Innovation",
-    subtitle: "White space with no portfolio overlap; blue-ocean opportunities.",
-  },
-  {
-    key: "competitor-lovemark",
-    title: "🎯 Competitor Love-Mark Gaps",
-    subtitle: "Formats or products competitors do well; we have the science but not the format.",
-  },
-  {
-    key: "v2-optimization",
-    title: "🔧 Portfolio V2 Optimization",
-    subtitle: "High overlap with current portfolio; fix friction via V2 of existing SKU.",
-  },
-];
+function StrategicLane({ title, subtitle, icon, items, brand, emptyText }: { 
+  title: string; 
+  subtitle: string; 
+  icon: string; 
+  items: any[]; 
+  brand: BrandName; 
+  emptyText?: string; 
+}) {
+  return (
+    <div className="mb-12">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-2xl">{icon}</span>
+        <h2 className="font-display text-xl font-bold text-foreground">{title}</h2>
+      </div>
+      <p className="text-sm text-muted-foreground mb-6">{subtitle}</p>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {items.length > 0 ? (
+          items.map((brief, idx) => (
+            <BriefCard key={brief.conceptName + brief.dynamicName + idx} brief={brief} brand={brand} index={idx} />
+          ))
+        ) : (
+          <div className="col-span-full p-8 border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center bg-muted/30 text-center">
+            <p className="text-sm text-muted-foreground italic">{emptyText || "No Gaps Identified in this lane."}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function StrategicLanes({ result, csvName }: { result: AnalysisResult; csvName: string }) {
-  const allBriefs = result.briefs;
-  const lowPriority = allBriefs.filter((b) => b.isLowSignal);
-  const decisionBriefs = allBriefs.filter((b) => !b.isLowSignal);
+  const innovationBriefs = result.briefs.filter(b => b.swimlane === 'high-signal' && !b.isLowSignal);
+  const loveMarkBriefs = result.briefs.filter(b => b.swimlane === 'competitor-lovemark' && !b.isLowSignal);
+  const v2Briefs = result.briefs.filter(b => b.swimlane === 'v2-optimization' && !b.isLowSignal);
+  const lowSignalBriefs = result.briefs.filter(b => b.isLowSignal === true);
 
   return (
     <div className="space-y-10">
-      {LANE_CONFIG.map(({ key, title, subtitle }) => {
-        const laneBriefs = decisionBriefs.filter((b) => b.swimlane === key);
-        return (
-          <section key={key} className="space-y-3">
-            <div>
-              <h3 className="font-display text-lg font-bold text-foreground">{title}</h3>
-              <p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>
-            </div>
-            {laneBriefs.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center">
-                <p className="text-sm text-muted-foreground">No Gaps Identified</p>
-                <p className="text-xs text-muted-foreground mt-1">No concepts in this lane for the current CSV.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {laneBriefs.map((brief, i) => (
-                  <BriefCard key={brief.conceptName + brief.dynamicName + i} brief={brief} brand={result.brand} index={i} />
-                ))}
-              </div>
-            )}
-          </section>
-        );
-      })}
+      <StrategicLane 
+        icon="🚀"
+        title="High-Signal Innovation"
+        subtitle="White space with no portfolio overlap; blue-ocean opportunities."
+        items={innovationBriefs}
+        brand={result.brand}
+      />
 
-      {/* Audit: Low Priority — separate section at bottom */}
-      <section className="space-y-3 pt-4 border-t border-border">
-        <div>
-          <h3 className="font-display text-lg font-bold text-foreground">Audit: Low Priority</h3>
-          <p className="text-sm text-muted-foreground mt-0.5">Low-signal or exploratory concepts; validate before R&D.</p>
+      <StrategicLane 
+        icon="🎯"
+        title="Competitor Love-Mark Gaps"
+        subtitle="Winning competitor formats we haven't launched; science repackaged for market share."
+        items={loveMarkBriefs}
+        brand={result.brand}
+      />
+
+      <StrategicLane 
+        icon="🔧"
+        title="Portfolio V2 Optimization"
+        subtitle="High overlap with current SKUs; fix friction or improve dosage via V2 iterations."
+        items={v2Briefs}
+        brand={result.brand}
+      />
+
+      <hr className="my-12 border-border" />
+
+      <div className="bg-muted/50 p-8 rounded-2xl border border-border">
+        <div className="mb-6">
+          <h2 className="font-display text-lg font-bold text-foreground">Audit: Low Priority</h2>
+          <p className="text-sm text-muted-foreground">Low-signal or trend-only concepts flagged to prevent premature R&D spend.</p>
         </div>
-        {lowPriority.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border bg-muted/30 p-6 text-center">
-            <p className="text-sm text-muted-foreground">No low-priority items</p>
+        {lowSignalBriefs.length === 0 ? (
+          <div className="p-6 border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center bg-card/50">
+            <p className="text-sm text-muted-foreground italic">No low-priority items</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {lowPriority.map((brief, i) => (
-              <BriefCard key={brief.conceptName + brief.dynamicName + "low" + i} brief={brief} brand={result.brand} index={i} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {lowSignalBriefs.map((brief, idx) => (
+              <div key={brief.conceptName + idx} className="opacity-75 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-300">
+                <BriefCard brief={brief} brand={result.brand} index={idx} />
+              </div>
             ))}
           </div>
         )}
-      </section>
+      </div>
     </div>
   );
 }
@@ -256,21 +268,9 @@ function ExecutiveSummary({ result }: { result: AnalysisResult }) {
       </h2>
 
       <div className="space-y-5">
-        <SummaryBlock
-          icon={FileCheck}
-          title="Data Integrity"
-          text={summary.dataIntegrity}
-        />
-        <SummaryBlock
-          icon={BarChart3}
-          title="Opportunity Score Logic"
-          text={summary.opportunityLogic}
-        />
-        <SummaryBlock
-          icon={Shield}
-          title="Format Compliance"
-          text={summary.formatCompliance}
-        />
+        <SummaryBlock icon={FileCheck} title="Data Integrity" text={summary.dataIntegrity} />
+        <SummaryBlock icon={BarChart3} title="Opportunity Score Logic" text={summary.opportunityLogic} />
+        <SummaryBlock icon={Shield} title="Format Compliance" text={summary.formatCompliance} />
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Zap className="w-4 h-4 text-foreground" />
@@ -278,9 +278,7 @@ function ExecutiveSummary({ result }: { result: AnalysisResult }) {
           </div>
           <ul className="space-y-1.5 ml-6">
             {summary.highPriority.map((item, i) => (
-              <li key={i} className="text-sm text-foreground/85 list-disc">
-                {item}
-              </li>
+              <li key={i} className="text-sm text-foreground/85 list-disc">{item}</li>
             ))}
           </ul>
         </div>
